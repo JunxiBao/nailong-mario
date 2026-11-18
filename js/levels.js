@@ -256,8 +256,18 @@ window.NailongAdventure = window.NailongAdventure || {};
         }
         tx += bridgeLen;
       } else if (roll < 0.18 && tx < bossArenaStart - 6) {
-        // 峡谷/岩浆池 + 移动云朵或升降平台（最大跨度 3~4 格，绝不卡死）
+        // 峡谷/糖浆河/岩浆池 + 移动云朵或升降平台（最大跨度 3~4 格，绝不卡死）
         const gapLen = spec.chapter === 5 ? 4 : 3;
+        if (spec.chapter === 2) {
+          // 第二章沙漠河流（焦糖蜜河）：踩入不扣血，触发高弹击退效果！
+          hazards.push({
+            type: 'desert_river',
+            x: tx * TILE_SIZE,
+            y: groundY + 10,
+            w: gapLen * TILE_SIZE,
+            h: TILE_SIZE * 2 - 10,
+          });
+        }
         if (spec.chapter === 5) {
           hazards.push({
             type: 'lava',
@@ -1122,6 +1132,20 @@ window.NailongAdventure = window.NailongAdventure || {};
         ctx.fill();
         ctx.fillStyle = '#E0F2FE';
         ctx.fillRect(sx + 6 + shake, sy + 2, 5, 16);
+      } else if (hz.type === 'desert_river') {
+        // 第二章沙漠焦糖蜜河（不扣血，带波光粼粼的急流击退特效）
+        ctx.fillStyle = '#0EA5E9';
+        ctx.fillRect(sx, sy, hz.w, hz.h);
+        ctx.fillStyle = '#7DD3FC';
+        for (let lx = 0; lx < hz.w; lx += 18) {
+          const waveY = Math.sin(timeSec * 9 + lx * 0.12) * 3;
+          ctx.fillRect(sx + lx, Math.round(sy + 2 + waveY), 12, 6);
+        }
+        ctx.fillStyle = '#E0F2FE';
+        for (let lx = 6; lx < hz.w - 10; lx += 28) {
+          const flowX = ((lx - Math.floor(timeSec * 60)) % (hz.w - 12) + (hz.w - 12)) % (hz.w - 12);
+          ctx.fillRect(sx + flowX, sy + 14, 10, 3);
+        }
       } else if (hz.type === 'lava') {
         // 第五章翻滚像素岩浆池
         ctx.fillStyle = '#DC2626';

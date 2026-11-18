@@ -367,12 +367,19 @@ window.NailongAdventure = window.NailongAdventure || {};
           if (t.type !== 'quicksand') continue;
           if (!aabbOverlap(player, t)) continue;
           if (player.vy >= -20 && prevBottom <= t.y + 28) {
-            // 第二章流沙陷阱：缓慢下沉最多 10px，绝不引发穿模瞬移！
+            // 第二章沙漠流沙河：缓慢下沉，若站立过久陷到 9px 深，触发流沙泉涌击退（不扣血）！
             player.inQuicksand = true;
             player.onGround = true;
             player.vy = 18;
-            if (player.y + player.h > t.y + 10) {
-              player.y = t.y + 10 - player.h;
+            if (player.y + player.h > t.y + 9) {
+              player.y = t.y - player.h - 4;
+              player.vy = -440;
+              player.vx = -210;
+              player.onGround = false;
+              player.inQuicksand = false;
+              if (ns.Audio) ns.Audio.playSpring();
+              this.spawnBurstParticles(player.x + 17, t.y, '#FDE047', 10, 150);
+              this.spawnFloatingText(player.x, t.y - 16, '🏜️流沙漩涡把你弹退啦!(不扣血)', '#F59E0B', 14);
             }
           }
         }
@@ -400,14 +407,25 @@ window.NailongAdventure = window.NailongAdventure || {};
         player.coyoteTimer = COYOTE_DURATION;
       }
 
-      // 掉入深渊安全救援机制（扣1格心并回到最近安全地面，不直接卡死重开！）
-      if (player.y > level.groundY + 120) {
-        this.damagePlayer(player, '掉进深谷啦！小七拉了你一把！');
-        if (!player.dead) {
-          player.x = player.safeX;
-          player.y = player.safeY - 16;
-          player.vx = 0;
-          player.vy = -180;
+      // 掉入深渊安全救援机制（第二章沙漠河流改为水流击退回岸上且不扣血；其余章节深谷扣1格心救援）
+      if (player.y > level.groundY + 75) {
+        if (level.chapter === 2) {
+          player.x = Math.max(24, player.safeX - 18);
+          player.y = player.safeY - 24;
+          player.vx = -220;
+          player.vy = -440;
+          player.onGround = false;
+          if (ns.Audio) ns.Audio.playSpring();
+          this.spawnBurstParticles(player.x + 17, level.groundY, '#38BDF8', 14, 170);
+          this.spawnFloatingText(player.x, player.y - 14, '🌊沙漠河水湍急！把你冲回岸上啦(不扣血)!', '#38BDF8', 14);
+        } else if (player.y > level.groundY + 120) {
+          this.damagePlayer(player, '掉进深谷啦！小七拉了你一把！');
+          if (!player.dead) {
+            player.x = player.safeX;
+            player.y = player.safeY - 16;
+            player.vx = 0;
+            player.vy = -180;
+          }
         }
       }
 
@@ -495,6 +513,18 @@ window.NailongAdventure = window.NailongAdventure || {};
         } else if (hz.type === 'cactus') {
           if (aabbOverlap(player, hz)) {
             this.damagePlayer(player, '扎到沙漠仙人掌刺啦！');
+          }
+        } else if (hz.type === 'desert_river') {
+          if (aabbOverlap(player, hz)) {
+            // 沙漠河流：不扣血，触发向上+向岸边的弹性水流击退！
+            player.vy = -490;
+            player.vx = -240;
+            player.onGround = false;
+            player.squashX = -0.15;
+            player.squashY = 0.18;
+            if (ns.Audio) ns.Audio.playSpring();
+            this.spawnBurstParticles(player.x + 17, hz.y + 4, '#38BDF8', 12, 160);
+            this.spawnFloatingText(player.x, hz.y - 14, '🌊沙漠河水击退!(不扣血)', '#38BDF8', 14);
           }
         } else if (hz.type === 'lava') {
           if (aabbOverlap(player, hz)) {
