@@ -789,11 +789,10 @@ window.NailongAdventure = window.NailongAdventure || {};
         if (aabbOverlap(player, en)) {
           const isStomp = player.vy > 0 && prevBottom <= en.y + Math.max(26, en.h * 0.65);
           if (isStomp) {
-            if (en.type === 'minion_helmet' && !player.isBig && !(player.atkBoostTimer > 0)) {
-              // 踩到独眼铁帽小紫兵：安全弹开不扣血！若处于护盾或狂暴龙晶状态可直接踩碎！
-              player.vy = -440;
-              if (ns.Audio) ns.Audio.playSpring();
-              this.spawnFloatingText(en.x, en.y - 14, '🛡️铁帽弹开!(不扣血，可用火球击败)', '#FDE047', 13);
+            if (en.type === 'minion_helmet') {
+              // 独眼弹簧铁帽小紫兵头顶有尖刺不可直接踩踏，会扎伤扣血并弹开奶龙！
+              player.vy = -400;
+              this.damagePlayer(player, '铁帽尖刺扎脚！请用红辣椒火球(J/Z)击败它！');
             } else {
               // 踩踏成功！触发连击翻倍与弹起（若处于狂暴龙晶状态，踩踏伤害 x2！）
               player.airCombo = (player.airCombo || 0) + 1;
