@@ -2,7 +2,10 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#fef3c7" />
   <title>奶龙大冒险：鸡腿保卫战</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
@@ -52,6 +55,7 @@
         <button id="btn-open-codex" class="ui-btn ghost-btn">图鉴</button>
         <button id="btn-open-leaderboard" class="ui-btn ghost-btn">排行</button>
         <button id="btn-mute" class="ui-btn ghost-btn" title="快捷键: M">音效: 开</button>
+        <button id="btn-fullscreen" class="ui-btn ghost-btn" title="切换全屏">全屏</button>
         <button id="btn-pause" class="ui-btn ghost-btn" title="快捷键: P / ESC">暂停</button>
       </div>
     </header>
@@ -269,18 +273,30 @@
       </section>
     </main>
 
-    <!-- 底部辅助控制与天气说明栏 -->
+    <!-- 底部辅助控制与移动端人体工学手柄栏 -->
     <footer id="touch-controls" class="glass-panel">
-      <div class="dpad-group">
-        <button id="touch-left" class="ui-btn ghost-btn pad-btn">左移 (A)</button>
-        <button id="touch-right" class="ui-btn ghost-btn pad-btn">右移 (D)</button>
+      <div class="dpad-group" id="mobile-dpad-zone">
+        <button id="touch-left" class="ui-btn ghost-btn pad-btn" aria-label="左移">
+          <span class="pad-icon">◀</span>
+          <span class="pad-text">左移 (A)</span>
+        </button>
+        <button id="touch-right" class="ui-btn ghost-btn pad-btn" aria-label="右移">
+          <span class="pad-text">右移 (D)</span>
+          <span class="pad-icon">▶</span>
+        </button>
       </div>
       <div class="status-hint" id="footer-weather-desc">
         本关天气：晴朗 — 标准物理 · 鸡腿得分 +10%
       </div>
-      <div class="action-group">
-        <button id="touch-fire" class="ui-btn secondary-btn">喷火球 (J)</button>
-        <button id="touch-jump" class="ui-btn primary-btn">跳跃 (W / 空格)</button>
+      <div class="action-group" id="mobile-action-zone">
+        <button id="touch-fire" class="ui-btn secondary-btn action-pad-btn" aria-label="喷火球">
+          <span class="pad-icon">🔥</span>
+          <span class="pad-text">喷火球 (J)</span>
+        </button>
+        <button id="touch-jump" class="ui-btn primary-btn action-pad-btn jump-pad-btn" aria-label="跳跃">
+          <span class="pad-icon">▲</span>
+          <span class="pad-text">跳跃 (W / 空格)</span>
+        </button>
       </div>
     </footer>
   </div>

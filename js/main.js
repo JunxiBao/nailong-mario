@@ -120,16 +120,75 @@ window.NailongAdventure = window.NailongAdventure || {};
         }
       });
 
-      const bindHoldBtn = (id, onDown, onUp) => {
-        const btn = document.getElementById(id);
+      // 移动端丝滑多指触控系统：支持左拇指在方向键区域左右平滑滑动变向，右拇指同时按跳跃/喷火互不干扰！
+      const dpadZone = document.getElementById('mobile-dpad-zone');
+      const leftBtn = document.getElementById('touch-left');
+      const rightBtn = document.getElementById('touch-right');
+      const jumpBtn = document.getElementById('touch-jump');
+      const fireBtn = document.getElementById('touch-fire');
+
+      const updateDpadFromTouches = (e) => {
+        if (!dpadZone || !leftBtn || !rightBtn) return;
+        const rect = dpadZone.getBoundingClientRect();
+        const midX = rect.left + rect.width * 0.5;
+        let hasLeft = false;
+        let hasRight = false;
+
+        for (let i = 0; i < e.touches.length; i++) {
+          const t = e.touches[i];
+          if (
+            t.clientX >= rect.left - 36 &&
+            t.clientX <= rect.right + 36 &&
+            t.clientY >= rect.top - 42 &&
+            t.clientY <= rect.bottom + 42
+          ) {
+            if (t.clientX < midX) hasLeft = true;
+            else hasRight = true;
+          }
+        }
+        this.input.left = hasLeft;
+        this.input.right = hasRight;
+        leftBtn.classList.toggle('touch-pressed', hasLeft);
+        rightBtn.classList.toggle('touch-pressed', hasRight);
+      };
+
+      if (dpadZone) {
+        dpadZone.addEventListener(
+          'touchstart',
+          (e) => {
+            e.preventDefault();
+            ns.Audio.unlock();
+            updateDpadFromTouches(e);
+          },
+          { passive: false }
+        );
+        dpadZone.addEventListener(
+          'touchmove',
+          (e) => {
+            e.preventDefault();
+            updateDpadFromTouches(e);
+          },
+          { passive: false }
+        );
+        const endDpad = (e) => {
+          e.preventDefault();
+          updateDpadFromTouches(e);
+        };
+        dpadZone.addEventListener('touchend', endDpad, { passive: false });
+        dpadZone.addEventListener('touchcancel', endDpad, { passive: false });
+      }
+
+      const bindHoldBtn = (btn, onDown, onUp) => {
         if (!btn) return;
         const start = (ev) => {
           ev.preventDefault();
           ns.Audio.unlock();
+          btn.classList.add('touch-pressed');
           onDown();
         };
         const end = (ev) => {
           ev.preventDefault();
+          btn.classList.remove('touch-pressed');
           if (onUp) onUp();
         };
         btn.addEventListener('mousedown', start);
@@ -137,20 +196,39 @@ window.NailongAdventure = window.NailongAdventure || {};
         btn.addEventListener('mouseleave', end);
         btn.addEventListener('touchstart', start, { passive: false });
         btn.addEventListener('touchend', end, { passive: false });
+        btn.addEventListener('touchcancel', end, { passive: false });
       };
 
+      // 桌面端鼠标点击左/右按钮回退兼容
+      if (leftBtn) {
+        leftBtn.addEventListener('mousedown', () => {
+          ns.Audio.unlock();
+          this.input.left = true;
+          leftBtn.classList.add('touch-pressed');
+        });
+        const stopLeft = () => {
+          this.input.left = false;
+          leftBtn.classList.remove('touch-pressed');
+        };
+        leftBtn.addEventListener('mouseup', stopLeft);
+        leftBtn.addEventListener('mouseleave', stopLeft);
+      }
+      if (rightBtn) {
+        rightBtn.addEventListener('mousedown', () => {
+          ns.Audio.unlock();
+          this.input.right = true;
+          rightBtn.classList.add('touch-pressed');
+        });
+        const stopRight = () => {
+          this.input.right = false;
+          rightBtn.classList.remove('touch-pressed');
+        };
+        rightBtn.addEventListener('mouseup', stopRight);
+        rightBtn.addEventListener('mouseleave', stopRight);
+      }
+
       bindHoldBtn(
-        'touch-left',
-        () => (this.input.left = true),
-        () => (this.input.left = false)
-      );
-      bindHoldBtn(
-        'touch-right',
-        () => (this.input.right = true),
-        () => (this.input.right = false)
-      );
-      bindHoldBtn(
-        'touch-jump',
+        jumpBtn,
         () => {
           this.input.jumpJustPressed = true;
           this.input.jumpHeld = true;
@@ -159,8 +237,15 @@ window.NailongAdventure = window.NailongAdventure || {};
           this.input.jumpHeld = false;
         }
       );
-      bindHoldBtn('touch-fire', () => {
+      bindHoldBtn(fireBtn, () => {
         this.input.fireJustPressed = true;
+      });
+
+      // 阻止移动端双击缩放或长按弹出系统菜单
+      document.addEventListener('contextmenu', (e) => {
+        if (e.target && (e.target.tagName === 'BUTTON' || e.target.tagName === 'CANVAS')) {
+          e.preventDefault();
+        }
       });
     }
 
@@ -253,6 +338,10 @@ window.NailongAdventure = window.NailongAdventure || {};
         this._toggleMute();
       });
 
+      document.getElementById('btn-fullscreen')?.addEventListener('click', () => {
+        this._toggleFullscreen();
+      });
+
       document.getElementById('btn-pause')?.addEventListener('click', () => {
         if (this.state === 'playing') this.pauseGame();
         else if (this.state === 'paused') this.resumeGame();
@@ -280,6 +369,24 @@ window.NailongAdventure = window.NailongAdventure || {};
       const btn = document.getElementById('btn-mute');
       if (btn) {
         btn.textContent = muted ? '音效: 关' : '音效: 开';
+      }
+    }
+
+    _toggleFullscreen() {
+      const doc = document;
+      const elem = document.documentElement;
+      if (!doc.fullscreenElement && !doc.webkitFullscreenElement) {
+        if (elem.requestFullscreen) {
+          elem.requestFullscreen().catch(() => {});
+        } else if (elem.webkitRequestFullscreen) {
+          elem.webkitRequestFullscreen();
+        }
+      } else {
+        if (doc.exitFullscreen) {
+          doc.exitFullscreen().catch(() => {});
+        } else if (doc.webkitExitFullscreen) {
+          doc.webkitExitFullscreen();
+        }
       }
     }
 
