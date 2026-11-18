@@ -396,7 +396,8 @@ window.NailongAdventure = window.NailongAdventure || {};
     }
 
     loadLevel(levelId, startPlaying = true) {
-      this.currentLevelId = Math.min(30, Math.max(1, levelId));
+      const totalLevels = ns.Levels.LEVEL_SPECS.length;
+      this.currentLevelId = Math.min(totalLevels, Math.max(1, levelId));
       this.level = ns.Levels.buildLevel(this.currentLevelId);
       ns.Physics.reset();
       this.player = ns.Physics.createPlayer(96, this.level.groundY - 46);
@@ -472,19 +473,20 @@ window.NailongAdventure = window.NailongAdventure || {};
         ns.Audio.playVoiceLine();
       }
 
+      const totalLevels = ns.Levels.LEVEL_SPECS.length;
       const starsCount = record.stars || 0;
       const nextLvlId = this.level.id + 1;
-      const nextUnlocked = nextLvlId <= 30 && ns.Leaderboard.isLevelUnlocked(nextLvlId);
+      const nextUnlocked = nextLvlId <= totalLevels && ns.Leaderboard.isLevelUnlocked(nextLvlId);
       const chapId = this.level.chapter;
       const chapStars = ns.Leaderboard.getChapterStars(chapId);
       const reqStars = ns.Leaderboard.getRequiredStarsForNextChapter(chapId);
 
       document.getElementById('result-title').textContent =
-        this.level.id === 30 ? '全 30 关通关完成' : `第 ${this.level.id} 关完成`;
+        this.level.id === totalLevels ? `全 ${totalLevels} 关通关完成` : `第 ${this.level.id} 关完成`;
       // 有几颗星就显示几颗星，0颗星时不显示空心星
       document.getElementById('result-stars').textContent = starsCount > 0 ? '★'.repeat(starsCount) : '';
 
-      if (this.level.id < 30 && !nextUnlocked) {
+      if (this.level.id < totalLevels && !nextUnlocked) {
         document.getElementById('result-subtitle').textContent =
           `本章当前累计 ${chapStars} / ${reqStars} 星，需在本章获得满 ${reqStars} 颗星方可解锁下一章`;
       } else {
@@ -505,7 +507,7 @@ window.NailongAdventure = window.NailongAdventure || {};
         retryBtn.classList.remove('hidden');
       }
       if (nextBtn) {
-        if (this.level.id >= 30) {
+        if (this.level.id >= totalLevels) {
           nextBtn.textContent = '查看排行榜';
           nextBtn.onclick = () => {
             this._showOverlay('modal-leaderboard');
@@ -627,14 +629,17 @@ window.NailongAdventure = window.NailongAdventure || {};
 
       document.getElementById('map-total-stars').textContent = String(ns.Leaderboard.getTotalStars());
 
-      for (let cId = 1; cId <= 5; cId++) {
+      const chapterIds = Object.keys(ns.Levels.CHAPTER_INFO).map(Number);
+      const totalChapters = chapterIds.length;
+
+      for (const cId of chapterIds) {
         const ch = ns.Levels.CHAPTER_INFO[cId];
         const chapUnlocked = ns.Leaderboard.isChapterUnlocked(cId);
         const chapStars = ns.Leaderboard.getChapterStars(cId);
         const reqNext = ns.Leaderboard.getRequiredStarsForNextChapter(cId);
 
         let rightStatusText = `本章星级 ${chapStars} / 18`;
-        if (cId < 5) {
+        if (cId < totalChapters) {
           rightStatusText += ` · 满 ${reqNext} 星且通关第 ${cId * 6} 关解锁下一章`;
         }
         if (!chapUnlocked && cId > 1) {

@@ -80,7 +80,46 @@ window.NailongAdventure = window.NailongAdventure || {};
       groundTop: '#52525B',
       groundBody: '#27272A',
       brickColor: '#991B1B',
-      desc: '深入暴暴龙的暗黑熔岩要塞，穿越旋转火棒与翻滚岩浆池，在第30关决战终极熔岩机甲暴暴龙！',
+      desc: '深入暴暴龙的暗黑熔岩要塞，穿越旋转火棒与翻滚岩浆池，迎战重装熔岩机甲暴暴龙！',
+    },
+    6: {
+      id: 6,
+      name: '第六章：赛博霓虹机械城',
+      enName: 'Cyber Neon Metropolis',
+      range: [31, 36],
+      themeColor: '#06B6D4',
+      skyTop: '#090D16',
+      skyBot: '#1E1B4B',
+      groundTop: '#22D3EE',
+      groundBody: '#1E293B',
+      brickColor: '#0284C7',
+      desc: '高速激光网格与霓虹机械浮台交织的未来都市，突破双重旋转激光与高敏铁帽紫兵防线！',
+    },
+    7: {
+      id: 7,
+      name: '第七章：云端雷霆神殿',
+      enName: 'Thunder Sky Sanctuary',
+      range: [37, 42],
+      themeColor: '#F59E0B',
+      skyTop: '#1E1B4B',
+      skyBot: '#4C1D95',
+      groundTop: '#FDE047',
+      groundBody: '#475569',
+      brickColor: '#D97706',
+      desc: '悬浮于万米雷云之上的黄金神殿，在狂风、高频天雷与极速消失的幻影浮桥间极限穿梭！',
+    },
+    8: {
+      id: 8,
+      name: '第八章：星际虚空终焉要塞',
+      enName: 'Cosmic Void Citadel',
+      range: [43, 48],
+      themeColor: '#EC4899',
+      skyTop: '#030712',
+      skyBot: '#3B0764',
+      groundTop: '#E879F9',
+      groundBody: '#1F2937',
+      brickColor: '#86198F',
+      desc: '跨越全机关复合的星际虚空黑洞矩阵，在第48关迎战16血三阶段【宇宙毁灭机甲·暴暴龙大帝】！',
     },
   };
 
@@ -123,8 +162,32 @@ window.NailongAdventure = window.NailongAdventure || {};
     { id: 26, chapter: 5, name: '烈焰旋转回廊', weather: 'thunderstorm', lengthTiles: 106, tip: '观察旋转火棒的顺时针轨迹，跟随空隙稳步跳跃前进！' },
     { id: 27, chapter: 5, name: '升降铁链熔炉', weather: 'rainy', lengthTiles: 110, tip: '搭乘上下升降的合金平台跨越宽阔岩浆海，切勿贪刀！' },
     { id: 28, chapter: 5, name: '狂雷赤焰长廊', weather: 'thunderstorm', lengthTiles: 114, tip: '雷暴与旋转火棒双重封锁，备好波波奶茶护盾与红辣椒火球开路！' },
-    { id: 29, chapter: 5, name: '王座前哨战', weather: 'thunderstorm', lengthTiles: 118, tip: '最后的试炼关卡！突破精英紫兵防线，直抵暴暴龙机甲王座！' },
-    { id: 30, chapter: 5, name: '终极决战：狂暴机甲暴暴龙', weather: 'thunderstorm', lengthTiles: 96, isBoss: true, isFinalBoss: true, bossHp: 10, tip: '【终极Boss战】暴暴龙驾驶熔岩毁灭机甲！拥有散射能量弹、喷气震地与半血狂暴紫焰三阶段模式，击败它夺回全部大鸡腿！' },
+    { id: 29, chapter: 5, name: '王座前哨战', weather: 'thunderstorm', lengthTiles: 118, tip: '突破熔岩要塞防线，直抵暴暴龙机甲王座！' },
+    { id: 30, chapter: 5, name: '熔岩决战：重装机甲暴暴龙', weather: 'thunderstorm', lengthTiles: 96, isBoss: true, isFinalBoss: true, bossHp: 9, tip: '【第五章Boss战】暴暴龙启动熔岩重装机甲！击败它开启通往赛博机械城的时空传送门！' },
+
+    // 第六章：赛博霓虹机械城 (31 - 36) —— 高速旋转激光、冰滑赛博装甲板、密集铁帽紫兵
+    { id: 31, chapter: 6, name: '霓虹数据大道', weather: 'rainy', lengthTiles: 118, tip: '进入第六章赛博机械城！酸雨让金属路面湿滑，小心高速巡逻的铁帽紫兵！' },
+    { id: 32, chapter: 6, name: '激光矩阵回廊', weather: 'windy', lengthTiles: 122, tip: '高能旋转激光棒速度大幅提升！善用狂暴龙晶双倍火球清扫前方障碍！' },
+    { id: 33, chapter: 6, name: '超导磁悬浮桥', weather: 'snowy', lengthTiles: 125, isIce: true, tip: '超导冷却路面摩擦力极低，配合弹簧蘑菇精准跃上高空黄金鸡腿台！' },
+    { id: 34, chapter: 6, name: '全息迷雾机房', weather: 'thunderstorm', lengthTiles: 128, hasFog: true, tip: '全息黑客迷雾遮蔽视野，同时提防电磁落雷与暗处突袭的装甲紫兵！' },
+    { id: 35, chapter: 6, name: '核心反应堆长廊', weather: 'thunderstorm', lengthTiles: 132, tip: '连续升降合金台与高速旋转火棒交错，考验极限微操！' },
+    { id: 36, chapter: 6, name: '机械城主：赛博机甲暴暴龙', weather: 'thunderstorm', lengthTiles: 100, isBoss: true, isFinalBoss: true, bossHp: 11, tip: '【第六章Boss战】11血赛博超频机甲暴暴龙！弹幕与冲撞速度提升30%，拾取狂暴龙晶反击！' },
+
+    // 第七章：云端雷霆神殿 (37 - 42) —— 狂风+天雷+极速幽灵桥+坠落冰锥复合高难关卡
+    { id: 37, chapter: 7, name: '万米雷云阶梯', weather: 'windy', lengthTiles: 128, tip: '踏入第七章云端雷霆神殿！高空罡风强劲，注意空中跳跃提前量！' },
+    { id: 38, chapter: 7, name: '幻影浮桥圣殿', weather: 'thunderstorm', lengthTiles: 132, tip: '神殿幽灵浮桥与天雷预警同时触发，切勿在同一块浮桥上停留超过0.7秒！' },
+    { id: 39, chapter: 7, name: '罡风天雷走廊', weather: 'windy', lengthTiles: 136, isIce: true, tip: '光滑云母石面 + 高空强风 + 悬空坠落冰柱，步步惊心！' },
+    { id: 40, chapter: 7, name: '雷神试炼密室', weather: 'thunderstorm', lengthTiles: 140, hasFog: true, tip: '雷云夜幕笼罩神殿，借助红辣椒光圈与闪电亮光穿越连续机关区！' },
+    { id: 41, chapter: 7, name: '苍穹圣域之巅', weather: 'thunderstorm', lengthTiles: 144, tip: '通往星际虚空前的最高密度紫兵精英防线，保持连击 Combo！' },
+    { id: 42, chapter: 7, name: '神殿裁决：雷神机甲暴暴龙', weather: 'thunderstorm', lengthTiles: 104, isBoss: true, isFinalBoss: true, bossHp: 13, tip: '【第七章Boss战】13血雷神机甲暴暴龙！在雷暴与高空竞技场展开巅峰对决！' },
+
+    // 第八章：星际虚空终焉要塞 (43 - 48) —— 全章节地狱难度复合机关 + 终极16血大帝决战
+    { id: 43, chapter: 8, name: '星际折跃边缘', weather: 'windy', lengthTiles: 138, isIce: true, tip: '最终章：星际虚空要塞！低摩擦星舰甲板与虚空强风双重考验！' },
+    { id: 44, chapter: 8, name: '黑洞引力裂谷', weather: 'thunderstorm', lengthTiles: 142, hasFog: true, tip: '虚空暗雾与高频能量火棒封锁，看准升降平台节奏一气呵成！' },
+    { id: 45, chapter: 8, name: '新星爆裂回廊', weather: 'thunderstorm', lengthTiles: 146, tip: '超长距离高难关卡！合理储备波波奶茶护盾、蜜桃回血果与狂暴龙晶！' },
+    { id: 46, chapter: 8, name: '零度星尘绝壁', weather: 'snowy', lengthTiles: 150, isIce: true, tip: '极寒星尘冰面 + 密集坠落陨冰 + 反向旋转双火棒，硬核平台跳跃试炼！' },
+    { id: 47, chapter: 8, name: '帝国舰桥前哨', weather: 'thunderstorm', lengthTiles: 155, hasFog: true, tip: '决战前的最长远征（155格）！突破双暴暴龙先锋的联合封锁！' },
+    { id: 48, chapter: 8, name: '终焉决战：宇宙机甲暴暴龙大帝', weather: 'thunderstorm', lengthTiles: 108, isBoss: true, isFinalBoss: true, bossHp: 16, tip: '【全游戏终极Boss战】16血宇宙毁灭机甲·暴暴龙大帝！高频三连扇形等离子炮+狂暴泰山压顶，夺回宇宙终极金鸡腿！' },
   ];
 
   // 伪随机数发生器（确保每一关地形固定、可背板、30关各具特色且100%可通关）
@@ -231,9 +294,9 @@ window.NailongAdventure = window.NailongAdventure || {};
           bounceAnim: 0,
         });
         tx += qsLen;
-      } else if (spec.chapter === 3 && roll < 0.25 && tx < bossArenaStart - 6) {
-        // 第三章特色：会消失的幽灵木桥跨越深涧 (3格宽)
-        const bridgeLen = 3;
+      } else if ((spec.chapter === 3 || spec.chapter >= 7) && roll < (spec.chapter >= 7 ? 0.28 : 0.25) && tx < bossArenaStart - 6) {
+        // 第三/七/八章特色：会消失的幽灵/幻影浮桥跨越深涧 (3~4格宽)
+        const bridgeLen = spec.chapter >= 7 ? 4 : 3;
         for (let i = 0; i < bridgeLen; i++) {
           tiles.push({
             tx: tx + i,
@@ -255,9 +318,9 @@ window.NailongAdventure = window.NailongAdventure || {};
           });
         }
         tx += bridgeLen;
-      } else if (roll < 0.18 && tx < bossArenaStart - 6) {
-        // 峡谷/糖浆河/岩浆池 + 移动云朵或升降平台（最大跨度 3~4 格，绝不卡死）
-        const gapLen = spec.chapter === 5 ? 4 : 3;
+      } else if (roll < (spec.chapter >= 6 ? 0.24 : 0.18) && tx < bossArenaStart - 6) {
+        // 峡谷/糖浆河/岩浆池/虚空裂谷 + 移动云朵或升降平台（最大跨度 3~4 格，绝不卡死）
+        const gapLen = spec.chapter >= 5 ? 4 : 3;
         if (spec.chapter === 2) {
           // 第二章沙漠河流（焦糖蜜河）：踩入不扣血，触发高弹击退效果！
           hazards.push({
@@ -268,7 +331,7 @@ window.NailongAdventure = window.NailongAdventure || {};
             h: TILE_SIZE * 2 - 10,
           });
         }
-        if (spec.chapter === 5) {
+        if (spec.chapter >= 5) {
           hazards.push({
             type: 'lava',
             x: tx * TILE_SIZE,
@@ -276,17 +339,17 @@ window.NailongAdventure = window.NailongAdventure || {};
             w: gapLen * TILE_SIZE,
             h: TILE_SIZE * 2 - 12,
           });
-          // 岩浆池上方配置升降/水平移动铁板平台
+          // 岩浆池/高能反应堆上方配置升降/水平移动铁板平台（高章节移动速度更快）
           movingPlatforms.push({
             x: (tx + 0.5) * TILE_SIZE,
             y: groundY - 24,
-            w: TILE_SIZE * 2.2,
+            w: TILE_SIZE * (spec.chapter >= 7 ? 1.9 : 2.2),
             h: 18,
             startX: (tx + 0.5) * TILE_SIZE,
             startY: groundY - 24,
-            ampX: gapLen >= 4 ? 26 : 0,
-            ampY: 38,
-            speed: 2.2,
+            ampX: gapLen >= 4 ? (spec.chapter >= 6 ? 34 : 26) : 0,
+            ampY: spec.chapter >= 6 ? 46 : 38,
+            speed: 2.2 + Math.max(0, spec.chapter - 5) * 0.35,
             phase: tx * 0.5,
             theme: 'lava',
           });
@@ -341,10 +404,13 @@ window.NailongAdventure = window.NailongAdventure || {};
           }
         }
 
-        // 决定本段机关/敌人类型
+        // 决定本段机关/敌人类型（第6~8章复合高难机关概率与速度随关卡递增！）
         const midTx = tx + Math.floor(segLen * 0.5);
         const hazardRoll = rng();
-        const hasFirebarOnSeg = spec.chapter === 5 && hazardRoll < 0.45 && midTx < bossArenaStart - 2;
+        const hasFirebarOnSeg =
+          spec.chapter >= 5 &&
+          hazardRoll < (spec.chapter >= 6 ? 0.52 : 0.45) &&
+          midTx < bossArenaStart - 2;
 
         // 在该地面段上方生成经典马里奥式交互砖块组（避开黄金鸡腿云台区与旋转火棒底座，杜绝任何方块重合！）
         if (
@@ -426,7 +492,7 @@ window.NailongAdventure = window.NailongAdventure || {};
               h: 34,
               triggered: false,
             });
-          } else if (spec.chapter === 4 && hazardRoll < 0.45 && !isNearGoldenSpot(midTx)) {
+          } else if ((spec.chapter === 4 || spec.chapter >= 7) && hazardRoll < 0.48 && !isNearGoldenSpot(midTx)) {
             const icicleY = segTopY - Math.round(TILE_SIZE * 4.2);
             tiles.push({
               tx: midTx,
@@ -458,19 +524,35 @@ window.NailongAdventure = window.NailongAdventure || {};
               h: TILE_SIZE,
               type: 'steel',
             });
+            const barSpeed = (1.8 + Math.max(0, levelId - 25) * 0.08) * (rng() > 0.5 ? 1 : -1);
             hazards.push({
               type: 'firebar',
               x: pivotX,
               y: pivotY,
-              length: 76,
+              length: spec.chapter >= 6 ? 86 : 76,
               angle: rng() * Math.PI * 2,
-              speed: (levelId >= 28 ? 2.4 : 1.8) * (rng() > 0.5 ? 1 : -1),
+              speed: barSpeed,
             });
+            // 第7~8章高难特色：双十字交叉旋转火棒！
+            if (spec.chapter >= 7) {
+              hazards.push({
+                type: 'firebar',
+                x: pivotX,
+                y: pivotY,
+                length: 84,
+                angle: rng() * Math.PI * 2 + Math.PI,
+                speed: barSpeed,
+              });
+            }
           } else {
-            const isHelmet = (levelId >= 1 && tx > 36 && rng() < 0.35) || (levelId >= 3 && rng() < 0.3 + spec.chapter * 0.05);
+            const isHelmet =
+              (levelId >= 1 && tx > 36 && rng() < 0.35) ||
+              (levelId >= 3 && rng() < Math.min(0.82, 0.28 + spec.chapter * 0.07));
             const minX = (tx + 0.3) * TILE_SIZE;
             const maxX = Math.min(bossArenaStart - 1, tx + segLen - 0.3) * TILE_SIZE;
             if (maxX - minX >= TILE_SIZE * 2) {
+              const spdBoost = 1 + Math.max(0, spec.chapter - 1) * 0.08;
+              const cdFactor = Math.max(0.55, 1 - (spec.chapter - 1) * 0.06);
               enemies.push({
                 type: isHelmet ? 'minion_helmet' : 'minion',
                 x: midTx * TILE_SIZE,
@@ -478,14 +560,14 @@ window.NailongAdventure = window.NailongAdventure || {};
                 groundTopY: segTopY,
                 w: 34,
                 h: 38,
-                vx: (isHelmet ? 78 : 68) * (rng() > 0.5 ? 1 : -1),
+                vx: Math.round((isHelmet ? 78 : 68) * spdBoost) * (rng() > 0.5 ? 1 : -1),
                 vy: 0,
-                hp: 1,
-                maxHp: 1,
+                hp: spec.chapter >= 7 && isHelmet ? 2 : 1,
+                maxHp: spec.chapter >= 7 && isHelmet ? 2 : 1,
                 patrolMin: minX,
                 patrolMax: maxX,
-                attackCooldown: 0.35 + rng() * 0.35,
-                jumpCooldown: 1.2 + rng() * 0.8,
+                attackCooldown: (0.35 + rng() * 0.35) * cdFactor,
+                jumpCooldown: (1.2 + rng() * 0.8) * cdFactor,
                 aggro: false,
                 squashed: false,
                 squashTimer: 0,
@@ -709,8 +791,9 @@ window.NailongAdventure = window.NailongAdventure || {};
         isRage: false,
       });
     } else {
-      // 每一关关底前均设有暴暴龙先锋守卫（主动发射紫色能量球与冲撞攻击！）
+      // 每一关关底前均设有暴暴龙先锋守卫（第7~8章关底升级为双暴暴龙先锋夹击！）
       const guardTx = lengthTiles - 14;
+      const guardHp = levelId === 1 ? 2 : 2 + Math.floor(spec.chapter * 0.65);
       enemies.push({
         type: 'boss',
         name: '暴暴龙先锋',
@@ -719,19 +802,44 @@ window.NailongAdventure = window.NailongAdventure || {};
         groundTopY: groundY,
         w: 50,
         h: 60,
-        vx: -82,
+        vx: -(82 + spec.chapter * 5),
         vy: 0,
-        hp: levelId === 1 ? 2 : 2 + Math.floor(spec.chapter * 0.5),
-        maxHp: levelId === 1 ? 2 : 2 + Math.floor(spec.chapter * 0.5),
+        hp: guardHp,
+        maxHp: guardHp,
         patrolMin: (guardTx - 6) * TILE_SIZE,
         patrolMax: (guardTx + 4) * TILE_SIZE,
-        shootCooldown: 2.2,
-        chargeCooldown: 4.2,
+        shootCooldown: Math.max(1.2, 2.2 - spec.chapter * 0.1),
+        chargeCooldown: Math.max(2.6, 4.2 - spec.chapter * 0.15),
         charging: false,
         hurtTimer: 0,
         attackTimer: 0,
-        isRage: false,
+        isRage: spec.chapter >= 7,
       });
+
+      if (spec.chapter >= 7) {
+        const subGuardTx = lengthTiles - 22;
+        enemies.push({
+          type: 'boss',
+          name: '暴暴龙暗影副官',
+          x: subGuardTx * TILE_SIZE,
+          y: groundY - 60,
+          groundTopY: groundY,
+          w: 50,
+          h: 60,
+          vx: 88 + spec.chapter * 5,
+          vy: 0,
+          hp: Math.max(3, guardHp - 1),
+          maxHp: Math.max(3, guardHp - 1),
+          patrolMin: (subGuardTx - 5) * TILE_SIZE,
+          patrolMax: (subGuardTx + 5) * TILE_SIZE,
+          shootCooldown: 1.65,
+          chargeCooldown: 3.4,
+          charging: false,
+          hurtTimer: 0,
+          attackTimer: 0,
+          isRage: false,
+        });
+      }
     }
 
     // 4. 关底终点旗杆与小七伙伴迎接区
@@ -865,6 +973,56 @@ window.NailongAdventure = window.NailongAdventure || {};
         ctx.lineTo(mx + 148, viewH - 180);
         ctx.fill();
       }
+    } else if (level.chapter === 6) {
+      // 第六章：赛博霓虹机械城 —— 霓虹摩天大楼天际线与全息数据光柱
+      for (let i = 0; i < 8; i++) {
+        const bx = Math.round(((i * 190 - camX * 0.22) % (viewW + 190) + (viewW + 190)) % (viewW + 190) - 90);
+        const bh = 160 + (i % 3) * 65;
+        ctx.fillStyle = '#0F172A';
+        ctx.fillRect(bx, viewH - 60 - bh, 74, bh);
+        ctx.strokeStyle = i % 2 === 0 ? '#06B6D4' : '#EC4899';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(bx, viewH - 60 - bh, 74, bh);
+        // 赛博霓虹窗格
+        ctx.fillStyle = i % 2 === 0 ? 'rgba(34, 211, 238, 0.65)' : 'rgba(244, 114, 182, 0.65)';
+        for (let wy = viewH - 40 - bh; wy < viewH - 80; wy += 22) {
+          ctx.fillRect(bx + 12, wy, 18, 8);
+          ctx.fillRect(bx + 42, wy, 18, 8);
+        }
+      }
+    } else if (level.chapter === 7) {
+      // 第七章：云端雷霆神殿 —— 悬浮黄金神殿廊柱与紫色雷云光带
+      for (let i = 0; i < 6; i++) {
+        const px = Math.round(((i * 230 - camX * 0.2) % (viewW + 230) + (viewW + 230)) % (viewW + 230) - 90);
+        ctx.fillStyle = '#FEF3C7';
+        ctx.fillRect(px, 95, 36, viewH - 155);
+        ctx.fillStyle = '#F59E0B';
+        ctx.fillRect(px - 8, 82, 52, 16);
+        ctx.fillRect(px - 8, viewH - 74, 52, 16);
+      }
+    } else if (level.chapter === 8) {
+      // 第八章：星际虚空终焉要塞 —— 璀璨星云、虚空黑洞日冕与悬浮能量折跃环
+      const bhX = viewW - 180;
+      const bhY = 110;
+      const pulse = Math.sin(timeSec * 4) * 6;
+      ctx.fillStyle = 'rgba(236, 72, 153, 0.25)';
+      ctx.beginPath();
+      ctx.arc(bhX, bhY, 54 + pulse, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#030712';
+      ctx.beginPath();
+      ctx.arc(bhX, bhY, 34, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#F472B6';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      for (let i = 0; i < 24; i++) {
+        const sx = ((i * 83 - camX * 0.12) % viewW + viewW) % viewW;
+        const sy = 30 + ((i * 47) % 240);
+        ctx.fillStyle = i % 3 === 0 ? '#38BDF8' : i % 3 === 1 ? '#F472B6' : '#FEF08A';
+        ctx.fillRect(Math.round(sx), sy, 3, 3);
+      }
     } else {
       // 第五章：暴暴龙熔岩城堡 —— 暗黑石柱、铁链与燃烧火把
       for (let i = 0; i < 7; i++) {
@@ -941,6 +1099,26 @@ window.NailongAdventure = window.NailongAdventure || {};
         ctx.fillStyle = '#E0F2FE';
         ctx.fillRect(sx + 4, sy - 20, 6, 20);
         ctx.fillRect(sx + 22, sy - 24, 6, 24);
+      } else if (dec.chapter === 6) {
+        // 赛博霓虹能量路牌灯柱
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(sx + 14, sy - 34, 6, 34);
+        ctx.fillStyle = '#06B6D4';
+        ctx.fillRect(sx + 6, sy - 44, 22, 12);
+        ctx.fillStyle = '#CFFAFE';
+        ctx.fillRect(sx + 9, sy - 41, 16, 6);
+      } else if (dec.chapter === 7) {
+        // 雷霆神殿黄金圣火柱
+        ctx.fillStyle = '#FDE68A';
+        ctx.fillRect(sx + 10, sy - 26, 14, 26);
+        ctx.fillStyle = '#A855F7';
+        ctx.fillRect(sx + 11, sy - 38 - (Math.floor(timeSec * 12) % 4), 12, 12);
+      } else if (dec.chapter === 8) {
+        // 星际虚空暗物质水晶柱
+        ctx.fillStyle = '#EC4899';
+        ctx.fillRect(sx + 11, sy - 34, 10, 34);
+        ctx.fillStyle = '#FBCFE8';
+        ctx.fillRect(sx + 14, sy - 30, 4, 22);
       } else {
         // 熔岩城堡骷髅火盆
         ctx.fillStyle = '#3F3F46';

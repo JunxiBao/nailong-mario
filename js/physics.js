@@ -754,8 +754,13 @@ window.NailongAdventure = window.NailongAdventure || {};
               en.vx = dirToPlayer * Math.abs(en.vx);
               if (ns.Audio) ns.Audio.playBossAttack();
 
-              // 发射紫色等离子能量球（终极Boss狂暴阶段发射扇形双弹！）
-              const angles = en.type === 'final_boss' && en.isRage ? [-0.18, 0.05] : [0];
+              // 发射紫色等离子能量球（终极Boss狂暴阶段发射扇形双弹/三连弹！）
+              const angles =
+                en.type === 'final_boss' && en.isRage
+                  ? level.chapter >= 8
+                    ? [-0.24, 0, 0.2]
+                    : [-0.18, 0.05]
+                  : [0];
               for (const ang of angles) {
                 this.enemyProjectiles.push({
                   kind: 'plasma',
@@ -763,7 +768,7 @@ window.NailongAdventure = window.NailongAdventure || {};
                   y: en.y + en.h * 0.42,
                   w: 16,
                   h: 16,
-                  vx: Math.cos(ang) * dirToPlayer * (en.isRage ? 275 : 230),
+                  vx: Math.cos(ang) * dirToPlayer * ((en.isRage ? 275 : 230) + Math.max(0, level.chapter - 5) * 18),
                   vy: Math.sin(ang) * 220,
                   hasGravity: false,
                   life: 2.6,

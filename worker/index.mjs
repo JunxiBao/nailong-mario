@@ -1,8 +1,8 @@
 import { DurableObject } from 'cloudflare:workers';
 
-const MAX_VALID_SCORE = 10_000_000;
-const MAX_VALID_DRUMSTICKS = 50_000;
-const MAX_VALID_LEVEL = 30;
+const MAX_VALID_SCORE = 20_000_000;
+const MAX_VALID_DRUMSTICKS = 80_000;
+const MAX_VALID_LEVEL = 48;
 
 function sanitizePlayerId(raw) {
   const s = String(raw ?? '')

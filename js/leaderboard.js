@@ -184,14 +184,16 @@ window.NailongAdventure = window.NailongAdventure || {};
     }
 
     /**
-     * 解锁下一章所需的当前章最低星数（每章满分 18 星，需达到 10 颗星且打通该章第 6 关方可解锁下一章）
+     * 解锁下一章所需的当前章最低星数（每章满分 18 星，后半程高难章节星级门槛逐步提高）
      */
-    getRequiredStarsForNextChapter(_chapterId) {
+    getRequiredStarsForNextChapter(chapterId) {
+      if (chapterId >= 6) return 12;
+      if (chapterId >= 4) return 11;
       return 10;
     }
 
     /**
-     * 判断指定章节 (1~5) 是否已解锁
+     * 判断指定章节 (1~8) 是否已解锁
      */
     isChapterUnlocked(chapterId) {
       if (chapterId <= 1) return true;
@@ -208,13 +210,14 @@ window.NailongAdventure = window.NailongAdventure || {};
     }
 
     /**
-     * 判断指定关卡 (1~30) 是否已解锁：
+     * 判断指定关卡 (1~48) 是否已解锁：
      * 1. 第 1 关默认解锁
      * 2. 其余关卡必须满足：上一关 (levelId - 1) 已通关，且所属章节已达到星级要求解锁
      */
     isLevelUnlocked(levelId) {
+      const totalLevels = ns.Levels ? ns.Levels.LEVEL_SPECS.length : 48;
       if (levelId <= 1) return true;
-      if (levelId > 30) return false;
+      if (levelId > totalLevels) return false;
       const chapterId = Math.ceil(levelId / 6);
       if (!this.isChapterUnlocked(chapterId)) return false;
       const prevCleared = Boolean(this.progress.levels[levelId - 1]?.cleared);
@@ -225,8 +228,9 @@ window.NailongAdventure = window.NailongAdventure || {};
      * 获取当前玩家已解锁的最高关卡号
      */
     getHighestUnlockedLevel() {
+      const totalLevels = ns.Levels ? ns.Levels.LEVEL_SPECS.length : 48;
       let highest = 1;
-      for (let i = 1; i <= 30; i++) {
+      for (let i = 1; i <= totalLevels; i++) {
         if (this.isLevelUnlocked(i)) {
           highest = i;
         } else {
@@ -238,8 +242,9 @@ window.NailongAdventure = window.NailongAdventure || {};
     }
 
     getTotalStars() {
+      const totalLevels = ns.Levels ? ns.Levels.LEVEL_SPECS.length : 48;
       let sum = 0;
-      for (let i = 1; i <= 30; i++) {
+      for (let i = 1; i <= totalLevels; i++) {
         const st = this.progress.levels[i];
         if (st && st.stars) sum += st.stars;
       }

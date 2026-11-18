@@ -13,9 +13,9 @@
  * 绝不生成或注入任何虚假机器人数据，完全由真实玩家战绩驱动。
  */
 
-const MAX_VALID_SCORE = 10_000_000;
-const MAX_VALID_DRUMSTICKS = 50_000;
-const MAX_VALID_LEVEL = 30;
+const MAX_VALID_SCORE = 20_000_000;
+const MAX_VALID_DRUMSTICKS = 80_000;
+const MAX_VALID_LEVEL = 48;
 const KV_KEY = 'nailong_adventure_leaderboard_v1';
 const CACHE_URL = 'https://leaderboard.nailong-adventure.internal/store_v1';
 
