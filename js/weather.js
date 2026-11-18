@@ -111,16 +111,16 @@ window.NailongAdventure = window.NailongAdventure || {};
      * 每帧更新关卡固定天气物理参数、风力、寒冷值、落雷预警与粒子
      */
     update(dt, player, camera, viewW, viewH, groundY = 460) {
-      // 1. 大风天物理：周期性顺风 / 逆风交替（降低推力强度，操控更稳）
+      // 1. 大风天物理：周期性顺风 / 逆风交替
       if (this.current === 'windy') {
         this.windPhaseTimer += dt;
         // 每 6.5 秒切换一次顺逆风向
         this.windDir = Math.sin(this.windPhaseTimer * 0.48) >= 0 ? 1 : -1;
         const gust = 0.65 + 0.35 * Math.sin(this.windPhaseTimer * 2.1);
-        this.windStrength = this.windDir * 155 * gust;
+        this.windStrength = this.windDir * 195 * gust;
       } else if (this.current === 'thunderstorm') {
         this.windDir = -1;
-        this.windStrength = -35;
+        this.windStrength = -50;
       } else {
         this.windStrength = 0;
       }
@@ -130,15 +130,15 @@ window.NailongAdventure = window.NailongAdventure || {};
         if (player.hasFire) {
           this.coldMeter = 0;
         } else if (Math.abs(player.vx) < 25 && player.onGround) {
-          this.coldMeter = Math.min(1, this.coldMeter + dt * 0.16);
+          this.coldMeter = Math.min(1, this.coldMeter + dt * 0.22);
         } else {
-          this.coldMeter = Math.max(0, this.coldMeter - dt * 0.65);
+          this.coldMeter = Math.max(0, this.coldMeter - dt * 0.52);
         }
       } else {
         this.coldMeter = Math.max(0, this.coldMeter - dt * 0.8);
       }
 
-      // 3. 雷暴天落雷预警与劈击逻辑（延长预警反应时间与冷却间隔）
+      // 3. 雷暴天落雷预警与劈击逻辑
       if (this.flashAlpha > 0) {
         this.flashAlpha = Math.max(0, this.flashAlpha - dt * 2.4);
       }
@@ -146,14 +146,14 @@ window.NailongAdventure = window.NailongAdventure || {};
       if (this.current === 'thunderstorm' && player) {
         this.strikeCooldown -= dt;
         if (this.strikeCooldown <= 0) {
-          this.strikeCooldown = 5.8 + Math.random() * 2.8;
+          this.strikeCooldown = 4.4 + Math.random() * 2.2;
           // 在奶龙前方或附近生成地面落雷预警区
-          const targetX = player.x + (Math.random() * 240 - 60);
+          const targetX = player.x + (Math.random() * 220 - 65);
           this.lightningStrikes.push({
             x: Math.max(64, targetX),
-            w: 38,
-            warningTimer: 1.85, // 1.85秒地面闪烁红区预警，留足充裕躲避时间
-            strikeTimer: 0.28, // 闪电持续时间
+            w: 42,
+            warningTimer: 1.5, // 1.5秒地面闪烁红区预警
+            strikeTimer: 0.3, // 闪电持续时间
             hitDone: false,
           });
         }
