@@ -224,112 +224,100 @@ window.NailongAdventure = window.NailongAdventure || {};
     }
 
     /**
-     * 绘制世界空间落雷预警与屏幕空间像素天气粒子
+     * Soft weather particles stay subordinate to the playable world. Lightning
+     * retains a clear coral warning column and a bright, readable strike.
      */
     render(ctx, camera, viewW, viewH, timeSec) {
       ctx.save();
-      ctx.imageSmoothingEnabled = false;
+      ctx.imageSmoothingEnabled = true;
+      ctx.lineCap = 'round';
 
-      // 1. 世界空间：绘制雷暴天地面落雷预警区与劈下的像素闪电柱
       for (const st of this.lightningStrikes) {
-        const sx = Math.round(st.x - camera.x);
+        const sx = st.x - camera.x;
         if (sx < -80 || sx > viewW + 80) continue;
-
         if (st.warningTimer > 0) {
-          // 地面闪烁红色预警区 + 感叹号标志
-          const blink = Math.floor(timeSec * 14) % 2 === 0;
-          ctx.fillStyle = blink ? 'rgba(255, 59, 48, 0.38)' : 'rgba(255, 204, 0, 0.22)';
-          ctx.fillRect(sx - st.w * 0.5, 0, st.w, viewH);
-
-          ctx.fillStyle = '#FF3B30';
-          ctx.fillRect(sx - st.w * 0.5, viewH - 76, st.w, 6);
-          ctx.fillStyle = '#FFEA00';
-          ctx.font = 'bold 16px monospace';
-          ctx.textAlign = 'center';
-          ctx.fillText('⚡当心落雷!', sx, 92);
+          const pulse = .65 + Math.sin(timeSec * 16) * .25;
+          const warning = ctx.createLinearGradient(0, 100, 0, viewH - 65);
+          warning.addColorStop(0, 'rgba(236,142,117,0)');
+          warning.addColorStop(.7, `rgba(236,142,117,${.07 * pulse})`);
+          warning.addColorStop(1, `rgba(236,142,117,${.32 * pulse})`);
+          ctx.fillStyle = warning;
+          ctx.fillRect(sx - st.w * .5, 110, st.w, viewH - 175);
+          ctx.strokeStyle = `rgba(210,104,86,${pulse})`;
+          ctx.lineWidth = 2;
+          ctx.setLineDash([4, 6]);
+          ctx.beginPath();ctx.moveTo(sx-st.w*.5,viewH-75);ctx.lineTo(sx-st.w*.5,viewH-160);ctx.moveTo(sx+st.w*.5,viewH-75);ctx.lineTo(sx+st.w*.5,viewH-160);ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.beginPath();ctx.ellipse(sx,viewH-69,st.w*.6,5,0,0,Math.PI*2);ctx.fillStyle=`rgba(220,116,90,${pulse})`;ctx.fill();
+          ctx.beginPath();ctx.arc(sx,viewH-110,12,0,Math.PI*2);ctx.fillStyle='#F4D6B1';ctx.fill();ctx.strokeStyle='#CC826C';ctx.lineWidth=1.5;ctx.stroke();
+          ctx.fillStyle='#A35E51';ctx.font='900 17px Trebuchet MS, sans-serif';ctx.textAlign='center';ctx.fillText('!',sx,viewH-104);
         } else {
-          // 劈下的锯齿状像素闪电光柱
-          ctx.fillStyle = 'rgba(255, 245, 157, 0.85)';
-          let curX = sx;
-          for (let y = 0; y < viewH; y += 24) {
-            const nextOff = ((y / 24) % 2 === 0 ? 1 : -1) * 10;
-            ctx.fillRect(curX - 8, y, 16, 26);
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(curX - 4, y, 8, 26);
-            ctx.fillStyle = 'rgba(255, 245, 157, 0.85)';
-            curX = sx + nextOff;
-          }
+          const points = [];
+          for(let y=0;y<=viewH-65;y+=28) points.push([sx+Math.sin(y*.27+st.x)*13,y]);
+          points.push([sx,viewH-66]);
+          const bolt = (color, width) => {
+            ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineJoin='round';ctx.beginPath();
+            points.forEach((point,i)=>{if(i===0)ctx.moveTo(point[0],point[1]);else ctx.lineTo(point[0],point[1]);});ctx.stroke();
+          };
+          bolt('rgba(252,224,155,.17)',25);
+          bolt('rgba(255,226,154,.55)',12);
+          bolt('#FFE8B2',6);
+          bolt('#FFFEEC',2.4);
+          ctx.beginPath();ctx.ellipse(sx,viewH-66,34,9,0,0,Math.PI*2);ctx.fillStyle='rgba(255,239,188,.7)';ctx.fill();
         }
       }
 
-      // 2. 屏幕空间粒子渲染
       if (this.current === 'sunny') {
-        for (let i = 0; i < 28; i++) {
+        for (let i = 0; i < 22; i++) {
           const p = this.particles[i];
-          ctx.fillStyle = i % 2 === 0 ? 'rgba(255, 249, 196, 0.55)' : 'rgba(255, 213, 79, 0.45)';
-          ctx.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size);
+          const alpha = .22 + Math.sin(p.phase) * .13;
+          ctx.fillStyle = i % 2 === 0 ? `rgba(255,247,212,${alpha})` : `rgba(253,226,157,${alpha})`;
+          ctx.beginPath();ctx.arc(p.x,p.y,p.size*.42,0,Math.PI*2);ctx.fill();
+          if(i%7===0){ctx.strokeStyle='rgba(255,251,219,.38)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(p.x-3,p.y);ctx.lineTo(p.x+3,p.y);ctx.moveTo(p.x,p.y-3);ctx.lineTo(p.x,p.y+3);ctx.stroke();}
         }
       } else if (this.current === 'rainy' || this.current === 'thunderstorm') {
-        ctx.fillStyle = this.current === 'thunderstorm' ? 'rgba(144, 202, 249, 0.78)' : 'rgba(129, 212, 250, 0.72)';
+        ctx.lineWidth = 1.2;
         for (const p of this.particles) {
-          const rx = Math.round(p.x);
-          const ry = Math.round(p.y);
-          // 斜向像素雨丝
-          ctx.fillRect(rx, ry, 2, 7);
-          ctx.fillRect(rx - 2, ry + 6, 2, 6);
+          ctx.strokeStyle=p.size>3?'rgba(220,241,231,.49)':'rgba(213,236,232,.28)';
+          ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x-3,p.y+8+p.size);ctx.stroke();
         }
-        // 地面像素水花溅射
-        ctx.fillStyle = 'rgba(225, 245, 254, 0.85)';
+        ctx.strokeStyle='rgba(231,248,234,.65)';ctx.lineWidth=1;
         for (const sp of this.splashes) {
-          const sx = Math.round(sp.x);
-          const sy = Math.round(sp.y);
-          ctx.fillRect(sx - 4, sy - 2, 2, 2);
-          ctx.fillRect(sx + 3, sy - 3, 2, 2);
-          ctx.fillRect(sx - 2, sy, 5, 2);
+          const size=1+(1-sp.timer/.16)*5;
+          ctx.beginPath();ctx.ellipse(sp.x,sp.y,size,size*.26,0,0,Math.PI*2);ctx.stroke();
+          ctx.beginPath();ctx.moveTo(sp.x-3,sp.y-2);ctx.lineTo(sp.x-4,sp.y-4);ctx.moveTo(sp.x+3,sp.y-2);ctx.lineTo(sp.x+4,sp.y-5);ctx.stroke();
         }
       } else if (this.current === 'windy') {
-        for (let i = 0; i < 55; i++) {
-          const p = this.particles[i];
-          const px = Math.round(p.x);
-          const py = Math.round(p.y);
-          if (i % 3 === 0) {
-            // 疾风气流条纹
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
-            ctx.fillRect(px, py, 18, 2);
-          } else {
-            // 飞舞的像素树叶/花瓣
-            ctx.fillStyle = i % 2 === 0 ? '#8BC34A' : '#FFB74D';
-            ctx.fillRect(px, py, 5, 3);
-            ctx.fillRect(px + 1, py - 1, 3, 5);
+        for (let i = 0; i < 44; i++) {
+          const p=this.particles[i];
+          if(i%3===0){
+            ctx.strokeStyle='rgba(251,250,226,.29)';ctx.lineWidth=1;
+            ctx.beginPath();ctx.moveTo(p.x-15,p.y+2);ctx.quadraticCurveTo(p.x,p.y-3,p.x+18,p.y);ctx.stroke();
+          }else{
+            ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.phase*.7);
+            ctx.beginPath();ctx.moveTo(-4,0);ctx.quadraticCurveTo(1,-5,5,0);ctx.quadraticCurveTo(0,4,-4,0);ctx.fillStyle=i%2?'#C4B67E':'#9EBE8F';ctx.globalAlpha=.62;ctx.fill();
+            ctx.strokeStyle='rgba(91,125,79,.4)';ctx.lineWidth=.6;ctx.beginPath();ctx.moveTo(-3,0);ctx.lineTo(4,0);ctx.stroke();ctx.restore();
           }
         }
       } else if (this.current === 'snowy') {
         for (const p of this.particles) {
-          const px = Math.round(p.x);
-          const py = Math.round(p.y);
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(px, py, p.size, p.size);
-          if (p.size >= 4) {
-            ctx.fillStyle = '#E1F5FE';
-            ctx.fillRect(px - 1, py + 1, p.size + 2, p.size - 2);
-          }
+          ctx.fillStyle=p.size>3?'rgba(255,255,245,.85)':'rgba(246,255,251,.48)';
+          ctx.beginPath();ctx.arc(p.x,p.y,p.size*.46,0,Math.PI*2);ctx.fill();
+          if(p.size>=5){ctx.strokeStyle='rgba(250,255,250,.5)';ctx.lineWidth=.8;ctx.beginPath();ctx.moveTo(p.x-3,p.y);ctx.lineTo(p.x+3,p.y);ctx.moveTo(p.x,p.y-3);ctx.lineTo(p.x,p.y+3);ctx.stroke();}
         }
-        // 如果玩家累积了寒冷值，在画面边缘渲染冰霜提示
-        if (this.coldMeter > 0.15) {
-          ctx.strokeStyle = `rgba(129, 212, 250, ${(this.coldMeter * 0.55).toFixed(2)})`;
-          ctx.lineWidth = 10;
-          ctx.strokeRect(5, 5, viewW - 10, viewH - 10);
+        if (this.coldMeter > .15) {
+          const frost=ctx.createRadialGradient(viewW*.5,viewH*.5,viewH*.32,viewW*.5,viewH*.5,viewW*.57);
+          frost.addColorStop(0,'rgba(218,240,237,0)');frost.addColorStop(1,`rgba(201,235,236,${this.coldMeter*.53})`);
+          ctx.fillStyle=frost;ctx.fillRect(0,0,viewW,viewH);
         }
       }
-
-      // 3. 雷暴全屏闪电白光特效
-      if (this.flashAlpha > 0.01) {
-        ctx.fillStyle = `rgba(255, 255, 240, ${this.flashAlpha.toFixed(2)})`;
-        ctx.fillRect(0, 0, viewW, viewH);
+      if (this.flashAlpha > .01) {
+        ctx.fillStyle=`rgba(255,250,224,${(this.flashAlpha*.75).toFixed(2)})`;
+        ctx.fillRect(0,0,viewW,viewH);
       }
-
       ctx.restore();
     }
+
   }
 
   ns.Weather = new WeatherSystem();

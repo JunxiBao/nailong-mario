@@ -1,312 +1,656 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="theme-color" content="#fef3c7" />
-  <title>奶龙大冒险：鸡腿保卫战</title>
-  <link rel="stylesheet" href="css/style.css" />
-</head>
-<body>
-  <div id="app-wrapper">
-    <!-- 顶部阳光奶油亮色状态栏（含奶龙动态像素徽章与增益状态） -->
-    <header id="hud-bar" class="glass-panel">
-      <div class="hud-left">
-        <div class="nailong-brand-badge" id="btn-hud-brand" title="点击查看奶龙角色与道具图鉴">
-          <canvas id="hud-avatar-canvas" width="38" height="38"></canvas>
-          <span class="brand-name">奶龙大冒险</span>
-        </div>
-        <div class="level-pill" id="hud-level-title">第 1 关 · 初入青草地</div>
-        <div class="hud-metric">
-          <span class="metric-label">生命</span>
-          <span id="hud-hearts" class="hearts-val">5 / 5</span>
-          <span id="hud-power-badge" class="state-tag">标准</span>
-          <span id="hud-atk-badge" class="state-tag atk-active hidden">伤害x2</span>
-        </div>
-        <div class="hud-metric">
-          <span class="metric-label">星级</span>
-          <span id="hud-golden-stars" class="golden-stars">—</span>
-        </div>
-      </div>
-
-      <div class="hud-center">
-        <div class="hud-metric">
-          <span class="metric-label">鸡腿</span>
-          <span id="hud-drumsticks" class="metric-val">0</span>
-        </div>
-        <div class="hud-metric">
-          <span class="metric-label">得分</span>
-          <span id="hud-score" class="metric-val">0</span>
-        </div>
-        <div class="hud-metric">
-          <span class="metric-label">时间</span>
-          <span id="hud-timer" class="metric-val">00:00</span>
-        </div>
-        <div class="hud-metric" title="当前关卡固定天气">
-          <span class="metric-label">天气</span>
-          <span id="hud-weather-text" class="metric-val">晴朗</span>
-        </div>
-      </div>
-
-      <div class="hud-right">
-        <button id="btn-open-map" class="ui-btn ghost-btn">选关</button>
-        <button id="btn-open-codex" class="ui-btn ghost-btn">图鉴</button>
-        <button id="btn-open-leaderboard" class="ui-btn ghost-btn">排行</button>
-        <button id="btn-mute" class="ui-btn ghost-btn" title="快捷键: M">音效: 开</button>
-        <button id="btn-fullscreen" class="ui-btn ghost-btn" title="切换全屏">全屏</button>
-        <button id="btn-pause" class="ui-btn ghost-btn" title="快捷键: P / ESC">暂停</button>
-      </div>
-    </header>
-
-    <!-- 主游戏画布容器 (960x540 16:9 视口) -->
-    <main id="canvas-stage">
-      <canvas id="game-canvas" width="960" height="540"></canvas>
-
-      <!-- 关卡顶部提示与语音字幕浮层 -->
-      <div id="level-tip-banner" class="tip-banner">
-        <span id="level-tip-text">按 A / D 移动，轻按或长按 W / 空格键控制跳跃高度</span>
-      </div>
-      <div id="voice-subtitle-toast" class="voice-toast hidden">“我是奶龙！”</div>
-      <div id="wind-indicator" class="wind-banner hidden">顺风推力</div>
-
-      <!-- 主菜单弹窗 -->
-      <section id="modal-menu" class="modal-overlay">
-        <div class="modal-card glass-panel menu-card">
-          <div class="menu-eyebrow">8 CHAPTERS · 48 LEVELS · PIXEL PLATFORMER</div>
-          <h1 class="game-title">奶龙大冒险：鸡腿保卫战</h1>
-          <p class="game-subtitle">八大章节 48 关完整版 · 3D-SDF 角色像素建模 · 难度阶梯递增挑战</p>
-
-          <!-- 核心角色实时像素模型预览 -->
-          <div class="hero-showcase-row">
-            <div class="showcase-item">
-              <canvas id="menu-canvas-nailong" width="88" height="88"></canvas>
-              <span class="showcase-label">奶龙</span>
-            </div>
-            <div class="showcase-item">
-              <canvas id="menu-canvas-baobaolong" width="88" height="88"></canvas>
-              <span class="showcase-label">暴暴龙</span>
-            </div>
-            <div class="showcase-item">
-              <canvas id="menu-canvas-minion1" width="80" height="80"></canvas>
-              <span class="showcase-label">双丸紫兵</span>
-            </div>
-            <div class="showcase-item">
-              <canvas id="menu-canvas-minion2" width="80" height="80"></canvas>
-              <span class="showcase-label">铁帽紫兵</span>
-            </div>
-            <div class="showcase-item">
-              <canvas id="menu-canvas-xiaoqi" width="84" height="84"></canvas>
-              <span class="showcase-label">小七</span>
-            </div>
-          </div>
-
-          <!-- 玩家昵称设置栏 -->
-          <div class="nickname-bar">
-            <label for="input-nickname">玩家昵称</label>
-            <input type="text" id="input-nickname" maxlength="12" placeholder="输入 2~12 字昵称" />
-            <button id="btn-random-nick" class="ui-btn ghost-btn">随机生成</button>
-            <span id="nickname-hint" class="nick-hint"></span>
-          </div>
-
-          <div class="menu-actions">
-            <button id="btn-start-game" class="ui-btn primary-btn large-btn">开始游戏（第 <span id="menu-continue-lvl">1</span> 关）</button>
-            <div class="menu-secondary-row">
-              <button id="btn-menu-map" class="ui-btn secondary-btn">关卡地图</button>
-              <button id="btn-menu-leaderboard" class="ui-btn secondary-btn">排行榜</button>
-              <button id="btn-menu-codex" class="ui-btn secondary-btn">角色图鉴</button>
-            </div>
-          </div>
-
-          <div class="controls-guide">
-            <span>移动：A / D 或 方向键</span>
-            <span>跳跃：W / 空格（踩红白蘑菇冲上高空秘境）</span>
-            <span>喷火球：J / Z / X</span>
-            <span>新道具：💖蜜桃回血果(+2生命) · ⚡狂暴龙晶(伤害x2)</span>
-          </div>
-        </div>
-      </section>
-
-      <!-- 关卡选择地图 (1~30关) -->
-      <section id="modal-map" class="modal-overlay hidden">
-        <div class="modal-card glass-panel wide-card">
-          <div class="modal-header">
-            <div>
-              <h2>关卡选择</h2>
-              <p class="modal-sub">共 8 章 48 关 · 收集关内黄金大鸡腿获取星级评价</p>
-            </div>
-            <div class="header-actions">
-              <span class="star-summary">累计星级 <b id="map-total-stars">0</b> / 144</span>
-              <button class="ui-btn ghost-btn btn-close-modal">关闭</button>
-            </div>
-          </div>
-          <div id="world-map-chapters" class="chapters-scroll"></div>
-        </div>
-      </section>
-
-      <!-- 角色建模图鉴弹窗 -->
-      <section id="modal-codex" class="modal-overlay hidden">
-        <div class="modal-card glass-panel wide-card">
-          <div class="modal-header">
-            <div>
-              <h2>角色图鉴</h2>
-              <p class="modal-sub">3D-SDF 体积像素模型与官方设定原图对比</p>
-            </div>
-            <button class="ui-btn ghost-btn btn-close-modal">关闭</button>
-          </div>
-          <div class="codex-grid" id="codex-container">
-            <div class="codex-card">
-              <div class="codex-visuals">
-                <canvas id="codex-canvas-nailong" width="88" height="88" class="codex-canvas"></canvas>
-                <img src="images/奶龙/images.jpeg" alt="奶龙原图" class="codex-ref-img" />
-              </div>
-              <h3>奶龙 (Nailong)</h3>
-              <p>圆润明黄色躯体、翠绿虹膜大眼、奶油白弹性大肚皮、粉色掌垫与三颗棕爪。支持高低可变跳跃、踩踏连击、红辣椒喷火球与波波奶茶护盾。</p>
-            </div>
-
-            <div class="codex-card">
-              <div class="codex-visuals">
-                <canvas id="codex-canvas-baobaolong" width="88" height="88" class="codex-canvas"></canvas>
-                <img src="images/暴暴龙/images copy 3.jpeg" alt="暴暴龙原图" class="codex-ref-img" />
-              </div>
-              <h3>暴暴龙 (Baobaolong)</h3>
-              <p>头顶锯齿状碎裂奶油蛋壳帽、冰蓝色皮肤、眉心深蓝双圆点眉、背部小蝠翼与冰薄荷色肚皮。会主动发射等离子能量球与蓄力冲撞，第 30 关驾驶熔岩机甲出战。</p>
-            </div>
-
-            <div class="codex-card">
-              <div class="codex-visuals">
-                <canvas id="codex-canvas-minion1" width="80" height="80" class="codex-canvas"></canvas>
-                <img src="images/小紫兵/Unknown copy.jpeg" alt="双丸小紫兵原图" class="codex-ref-img" />
-              </div>
-              <h3>双丸头带小紫兵</h3>
-              <p>粉紫麻薯脸、左右紫色云朵双发髻、青色“bomb”发带、双颗黄绿大眼与牛仔背带裤。发现奶龙后会加速冲锋并投掷抛物线紫晶炸弹，可从上方踩扁击败。</p>
-            </div>
-
-            <div class="codex-card">
-              <div class="codex-visuals">
-                <canvas id="codex-canvas-minion2" width="80" height="80" class="codex-canvas"></canvas>
-                <img src="images/小紫兵/Unknown.jpeg" alt="独眼小紫兵原图" class="codex-ref-img" />
-              </div>
-              <h3>独眼铁帽小紫兵</h3>
-              <p>中央巨大黄绿独眼、米白圆帽配顶部红银金属尖刺与单肩折角背带裤。会主动弹簧高跳并发射水平尖刺弹，头顶尖刺不可直接踩踏，需用辣椒火球击败。</p>
-            </div>
-
-            <div class="codex-card">
-              <div class="codex-visuals">
-                <canvas id="codex-canvas-xiaoqi" width="84" height="84" class="codex-canvas"></canvas>
-                <img src="images/小七/images.jpeg" alt="小七原图" class="codex-ref-img" />
-              </div>
-              <h3>天才少年小七</h3>
-              <p>蓬松黑发配头顶标志性单根弯曲呆毛、珊瑚橙 T 恤与深灰短裤。在每关终点旗杆旁迎接奶龙，并在奶龙跌落深谷时协助救援。</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- 排行榜弹窗 (Cloudflare Pages 全球/本地真实排行) -->
-      <section id="modal-leaderboard" class="modal-overlay hidden">
-        <div class="modal-card glass-panel wide-card">
-          <div class="modal-header">
-            <div>
-              <h2>排行榜 (Top 10)</h2>
-              <p class="modal-sub" id="leaderboard-meta-line">榜首：虚位以待 · 仅收录真实玩家闯关战绩</p>
-            </div>
-            <button class="ui-btn ghost-btn btn-close-modal">关闭</button>
-          </div>
-          <div class="leaderboard-tabs">
-            <button class="ui-btn tab-btn active" data-tab="score">总分榜</button>
-            <button class="ui-btn tab-btn" data-tab="speedrun">速通榜</button>
-            <button class="ui-btn tab-btn" data-tab="drumsticks">鸡腿榜</button>
-          </div>
-          <div class="table-wrap">
-            <table class="clean-table">
-              <thead>
-                <tr>
-                  <th>排名</th>
-                  <th>玩家昵称</th>
-                  <th>总得分</th>
-                  <th>收集鸡腿</th>
-                  <th>最高关卡</th>
-                  <th>总耗时</th>
-                  <th>更新时间</th>
-                </tr>
-              </thead>
-              <tbody id="leaderboard-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- 暂停菜单弹窗 -->
-      <section id="modal-pause" class="modal-overlay hidden">
-        <div class="modal-card glass-panel small-card">
-          <h2>游戏暂停</h2>
-          <p id="pause-level-info" class="modal-sub">第 1 关 · 初入青草地</p>
-          <div class="menu-btn-col">
-            <button id="btn-resume" class="ui-btn primary-btn">继续游戏</button>
-            <button id="btn-restart-level" class="ui-btn secondary-btn">重新开始本关</button>
-            <button id="btn-pause-map" class="ui-btn secondary-btn">关卡选择</button>
-            <button id="btn-pause-home" class="ui-btn ghost-btn">返回主菜单</button>
-          </div>
-        </div>
-      </section>
-
-      <!-- 过关结算 / 失败重开弹窗 -->
-      <section id="modal-result" class="modal-overlay hidden">
-        <div class="modal-card glass-panel small-card">
-          <h2 id="result-title">本关完成</h2>
-          <div id="result-stars" class="result-stars-big"></div>
-          <p id="result-subtitle" class="modal-sub">成功抵达终点旗帜</p>
-          <div class="result-stats-box">
-            <div class="stat-cell"><span>本关得分</span><b id="result-score">0</b></div>
-            <div class="stat-cell"><span>收集鸡腿</span><b id="result-drumsticks">0</b></div>
-            <div class="stat-cell"><span>黄金鸡腿</span><b id="result-golden">0 / 3</b></div>
-            <div class="stat-cell"><span>通关耗时</span><b id="result-time">00:00</b></div>
-          </div>
-          <div class="menu-btn-col">
-            <button id="btn-next-level" class="ui-btn primary-btn">下一关</button>
-            <button id="btn-retry-level" class="ui-btn secondary-btn">重玩本关</button>
-            <button id="btn-result-map" class="ui-btn ghost-btn">关卡选择</button>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <!-- 底部辅助控制与移动端人体工学手柄栏 -->
-    <footer id="touch-controls" class="glass-panel">
-      <div class="dpad-group" id="mobile-dpad-zone">
-        <button id="touch-left" class="ui-btn ghost-btn pad-btn" aria-label="左移">
-          <span class="pad-icon">◀</span>
-          <span class="pad-text">左移 (A)</span>
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="theme-color" content="#eef3ed" />
+    <title>奶龙大冒险：鸡腿保卫战</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <svg
+      class="svg-library"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <symbol id="i-arrow" viewBox="0 0 24 24">
+        <path d="M5 12h14m-6-6 6 6-6 6" />
+      </symbol>
+      <symbol id="i-play" viewBox="0 0 24 24">
+        <path d="m9 5 11 7-11 7z" fill="currentColor" stroke="none" />
+      </symbol>
+      <symbol id="i-map" viewBox="0 0 24 24">
+        <path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3zm6-3v15m6-12v15" />
+      </symbol>
+      <symbol id="i-book" viewBox="0 0 24 24">
+        <path
+          d="M12 6c-3-2-6-2-10-1v15c4-1 7-1 10 1 3-2 6-2 10-1V5c-4-1-7-1-10 1zm0 0v15M6 9h2m-2 4h2m8-4h2m-2 4h2"
+        />
+      </symbol>
+      <symbol id="i-trophy" viewBox="0 0 24 24">
+        <path
+          d="M7 3h10v5c0 4-2 6-5 6s-5-2-5-6zm0 2H3v3c0 3 3 4 5 4m9-7h4v3c0 3-3 4-5 4m-4 2v5m-4 2h8m-6-2h4"
+        />
+      </symbol>
+      <symbol id="i-sound" viewBox="0 0 24 24">
+        <path d="m11 4-6 5H2v6h3l6 5zm5 4c3 2 3 6 0 8m3-11c5 4 5 10 0 14" />
+      </symbol>
+      <symbol id="i-expand" viewBox="0 0 24 24">
+        <path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5" />
+      </symbol>
+      <symbol id="i-pause" viewBox="0 0 24 24">
+        <path d="M8 5v14M16 5v14" stroke-width="4" />
+      </symbol>
+      <symbol id="i-spark" viewBox="0 0 24 24">
+        <path d="m12 2 2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5z" />
+      </symbol>
+      <symbol id="i-shuffle" viewBox="0 0 24 24">
+        <path
+          d="M3 6h3c6 0 6 12 12 12h3m-4-4 4 4-4 4M3 18h3c2 0 3-1 4-3m4-6c1-2 2-3 4-3h3m-4-4 4 4-4 4"
+        />
+      </symbol>
+      <symbol id="i-heart" viewBox="0 0 24 24">
+        <path d="M12 21 3 12C-3 5 6-2 12 5c6-7 15 0 9 7z" />
+      </symbol>
+      <symbol id="i-fire" viewBox="0 0 24 24">
+        <path
+          d="M13 2c2 7-3 7-1 11 2-1 3-3 3-5 5 4 6 8 3 12-4 5-13 2-13-4 0-5 5-6 8-14z"
+        />
+      </symbol>
+      <symbol id="i-jump" viewBox="0 0 24 24">
+        <path d="M12 19V4m-6 6 6-6 6 6M4 21h16" />
+      </symbol>
+      <symbol id="i-keyboard" viewBox="0 0 24 24">
+        <rect x="2" y="5" width="20" height="14" rx="3" />
+        <path d="M6 9h1m4 0h1m4 0h2M6 12h1m4 0h1m4 0h2M7 16h10" />
+      </symbol>
+      <symbol id="i-sun" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="4" />
+        <path
+          d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1 1m12 12 1 1M5 19l1-1M18 6l1-1"
+        />
+      </symbol>
+      <symbol id="i-close" viewBox="0 0 24 24">
+        <path d="m6 6 12 12M6 18 18 6" />
+      </symbol>
+    </svg>
+    <div id="app-wrapper" class="is-menu">
+      <header id="hud-bar">
+        <button
+          class="nailong-brand-badge"
+          id="btn-hud-brand"
+          aria-label="查看奶龙角色图鉴"
+        >
+          <span class="brand-avatar"
+            ><canvas id="hud-avatar-canvas" width="96" height="96"></canvas
+          ></span>
+          <span class="brand-lockup"
+            ><span class="brand-name"
+              >奶龙大冒险<span class="brand-dot">.</span></span
+            ><span class="brand-english">NAILONG ADVENTURE</span></span
+          >
         </button>
-        <button id="touch-right" class="ui-btn ghost-btn pad-btn" aria-label="右移">
-          <span class="pad-text">右移 (D)</span>
-          <span class="pad-icon">▶</span>
-        </button>
-      </div>
-      <div class="status-hint" id="footer-weather-desc">
-        本关天气：晴朗 — 标准物理 · 鸡腿得分 +10%
-      </div>
-      <div class="action-group" id="mobile-action-zone">
-        <button id="touch-fire" class="ui-btn secondary-btn action-pad-btn" aria-label="喷火球">
-          <span class="pad-icon">🔥</span>
-          <span class="pad-text">喷火球 (J)</span>
-        </button>
-        <button id="touch-jump" class="ui-btn primary-btn action-pad-btn jump-pad-btn" aria-label="跳跃">
-          <span class="pad-icon">▲</span>
-          <span class="pad-text">跳跃 (W / 空格)</span>
-        </button>
-      </div>
-    </footer>
-  </div>
+        <span class="header-caption">小小的奶龙，大大的冒险。</span>
+        <nav class="hud-right" aria-label="游戏导航">
+          <button id="btn-open-map" class="ui-btn nav-btn">
+            <svg class="icon"><use href="#i-map" /></svg><span>选关</span>
+          </button>
+          <button id="btn-open-codex" class="ui-btn nav-btn">
+            <svg class="icon"><use href="#i-book" /></svg><span>图鉴</span>
+          </button>
+          <button id="btn-open-leaderboard" class="ui-btn nav-btn">
+            <svg class="icon"><use href="#i-trophy" /></svg><span>排行</span>
+          </button>
+          <span class="nav-divider"></span>
+          <button
+            id="btn-mute"
+            class="ui-btn icon-btn"
+            title="音效开关 · M"
+            aria-label="关闭音效"
+            aria-pressed="false"
+          >
+            <svg class="icon"><use href="#i-sound" /></svg>
+          </button>
+          <button
+            id="btn-fullscreen"
+            class="ui-btn icon-btn"
+            title="切换全屏"
+            aria-label="切换全屏"
+          >
+            <svg class="icon"><use href="#i-expand" /></svg>
+          </button>
+          <button
+            id="btn-pause"
+            class="ui-btn icon-btn"
+            title="暂停 · P / ESC"
+            aria-label="暂停游戏"
+          >
+            <svg class="icon"><use href="#i-pause" /></svg>
+          </button>
+        </nav>
+        <div class="hud-dashboard">
+          <div class="hud-left">
+            <div class="level-pill" id="hud-level-title">
+              第 1 关 · 初入青草地
+            </div>
+            <div class="hud-metric health-metric">
+              <svg class="icon"><use href="#i-heart" /></svg
+              ><span id="hud-hearts" class="hearts-val">5 / 5</span
+              ><span id="hud-power-badge" class="state-tag">标准</span
+              ><span id="hud-atk-badge" class="state-tag atk-active hidden"
+                >伤害x2</span
+              >
+            </div>
+          </div>
+          <div class="hud-center">
+            <div class="hud-metric">
+              <span class="metric-label">黄金收集</span
+              ><span id="hud-golden-stars" class="golden-stars">—</span>
+            </div>
+            <div class="hud-metric">
+              <span class="metric-label">鸡腿</span
+              ><span id="hud-drumsticks" class="metric-val">0</span>
+            </div>
+            <div class="hud-metric">
+              <span class="metric-label">得分</span
+              ><span id="hud-score" class="metric-val">0</span>
+            </div>
+            <div class="hud-metric">
+              <span class="metric-label">时间</span
+              ><span id="hud-timer" class="metric-val">00:00</span>
+            </div>
+            <div class="hud-metric weather-metric">
+              <svg class="icon"><use href="#i-sun" /></svg
+              ><span id="hud-weather-text" class="metric-val">晴朗</span>
+            </div>
+          </div>
+        </div>
+      </header>
 
-  <script src="js/sprites.js"></script>
-  <script src="js/audio.js"></script>
-  <script src="js/weather.js"></script>
-  <script src="js/levels.js"></script>
-  <script src="js/leaderboard.js"></script>
-  <script src="js/physics.js"></script>
-  <script src="js/main.js"></script>
-</body>
+      <!-- 主游戏画布容器 (960x540 16:9 视口) -->
+      <main id="canvas-stage">
+        <canvas id="game-canvas" width="960" height="540"></canvas>
+
+        <!-- 关卡顶部提示与语音字幕浮层 -->
+        <div id="level-tip-banner" class="tip-banner">
+          <span id="level-tip-text"
+            >按 A / D 移动，轻按或长按 W / 空格键控制跳跃高度</span
+          >
+        </div>
+        <div id="voice-subtitle-toast" class="voice-toast hidden">
+          “我是奶龙！”
+        </div>
+        <div id="wind-indicator" class="wind-banner hidden">顺风推力</div>
+
+        <!-- 冒险首页 -->
+        <section id="modal-menu" class="modal-overlay" aria-label="冒险首页">
+          <div class="menu-card">
+            <div class="menu-copy">
+              <div class="menu-eyebrow">
+                <span class="live-dot"></span> 快乐补给完毕 · 随时出发
+              </div>
+              <h1 class="game-title">
+                奶龙大冒险<span
+                  >鸡腿保卫战<svg class="title-spark">
+                    <use href="#i-spark" /></svg
+                ></span>
+              </h1>
+              <p class="game-subtitle">
+                穿过青草地，跃过云朵，和奶龙一起<br
+                  class="desktop-break"
+                />把每一颗快乐，都收入囊中。
+              </p>
+              <div class="adventure-facts">
+                <span><b>08</b> 奇妙世界</span><i></i
+                ><span><b>48</b> 冒险关卡</span><i></i
+                ><span
+                  ><svg class="icon"><use href="#i-heart" /></svg>
+                  快乐无限</span
+                >
+              </div>
+              <div class="nickname-bar">
+                <label for="input-nickname">冒险家</label>
+                <input
+                  type="text"
+                  id="input-nickname"
+                  maxlength="12"
+                  placeholder="给自己起个名字"
+                  autocomplete="nickname"
+                />
+                <button
+                  id="btn-random-nick"
+                  class="ui-btn icon-btn"
+                  title="随机生成昵称"
+                  aria-label="随机生成昵称"
+                >
+                  <svg class="icon"><use href="#i-shuffle" /></svg>
+                </button>
+                <span
+                  id="nickname-hint"
+                  class="nick-hint"
+                  aria-live="polite"
+                ></span>
+              </div>
+              <button id="btn-start-game" class="ui-btn primary-btn start-btn">
+                <span class="start-play"
+                  ><svg class="icon"><use href="#i-play" /></svg></span
+                ><span
+                  >出发，去冒险！<small
+                    >从第
+                    <span id="menu-continue-lvl">1</span> 关开启快乐</small
+                  ></span
+                ><svg class="icon start-arrow"><use href="#i-arrow" /></svg>
+              </button>
+              <p class="save-note">
+                <span class="live-dot"></span> 冒险进度自动保存，快乐随时继续
+              </p>
+            </div>
+            <div class="menu-art" aria-label="奶龙和伙伴们的青草地冒险">
+              <div class="art-orbit orbit-one"></div>
+              <div class="art-orbit orbit-two"></div>
+              <div class="art-sun"></div>
+              <div class="hero-speech">我是奶龙！<span>一起玩呀～</span></div>
+              <canvas
+                id="menu-scene"
+                width="1080"
+                height="1120"
+                aria-hidden="true"
+              ></canvas>
+              <div class="world-stamp">
+                <span class="stamp-icon"
+                  ><svg class="icon"><use href="#i-map" /></svg></span
+                ><span><small>第一站 · WORLD 01</small><b>阳光青草地</b></span
+                ><span class="stamp-dot"></span>
+              </div>
+              <div class="art-caption">
+                <span></span> THE ADVENTURE IS ABOUT TO BEGIN <span></span>
+              </div>
+            </div>
+            <div class="menu-dock">
+              <button id="btn-menu-map" class="menu-dock-btn">
+                <span class="dock-icon mint"
+                  ><svg class="icon"><use href="#i-map" /></svg></span
+                ><span><b>探索世界</b><small>下一站，会遇见什么？</small></span
+                ><svg class="icon dock-arrow"><use href="#i-arrow" /></svg>
+              </button>
+              <button id="btn-menu-codex" class="menu-dock-btn">
+                <span class="dock-icon peach"
+                  ><svg class="icon"><use href="#i-book" /></svg></span
+                ><span><b>认识伙伴</b><small>每个朋友都有小秘密</small></span
+                ><svg class="icon dock-arrow"><use href="#i-arrow" /></svg>
+              </button>
+              <button id="btn-menu-leaderboard" class="menu-dock-btn">
+                <span class="dock-icon lavender"
+                  ><svg class="icon"><use href="#i-trophy" /></svg></span
+                ><span><b>冒险荣誉榜</b><small>记录你的闪光时刻</small></span
+                ><svg class="icon dock-arrow"><use href="#i-arrow" /></svg>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 八章 48 关冒险地图 -->
+        <section id="modal-map" class="modal-overlay hidden">
+          <div class="modal-card glass-panel wide-card">
+            <div class="modal-header">
+              <div>
+                <h2>关卡选择</h2>
+                <p class="modal-sub">
+                  共 8 章 48 关 · 收集关内黄金大鸡腿获取星级评价
+                </p>
+              </div>
+              <div class="header-actions">
+                <span class="star-summary"
+                  >累计星级 <b id="map-total-stars">0</b> / 144</span
+                >
+                <button
+                  class="ui-btn icon-btn btn-close-modal"
+                  aria-label="关闭弹窗"
+                >
+                  <svg class="icon"><use href="#i-close" /></svg>
+                </button>
+              </div>
+            </div>
+            <div id="world-map-chapters" class="chapters-scroll"></div>
+          </div>
+        </section>
+
+        <!-- 角色与招式图鉴 -->
+        <section id="modal-codex" class="modal-overlay hidden">
+          <div class="modal-card glass-panel wide-card">
+            <div class="modal-header">
+              <div>
+                <h2>冒险伙伴图鉴</h2>
+                <p class="modal-sub">认识你的伙伴，发现每个角色的独特本领</p>
+              </div>
+              <button
+                class="ui-btn icon-btn btn-close-modal"
+                aria-label="关闭弹窗"
+              >
+                <svg class="icon"><use href="#i-close" /></svg>
+              </button>
+            </div>
+            <div class="codex-grid" id="codex-container">
+              <div class="codex-card">
+                <div class="codex-visuals">
+                  <canvas
+                    id="codex-canvas-nailong"
+                    width="320"
+                    height="320"
+                    class="codex-canvas"
+                  ></canvas>
+                  <img
+                    src="images/奶龙/images.jpeg"
+                    alt="奶龙原图"
+                    class="codex-ref-img"
+                  />
+                </div>
+                <h3>奶龙 (Nailong)</h3>
+                <p>
+                  圆润明黄色躯体、翠绿虹膜大眼、奶油白弹性大肚皮、粉色掌垫与三颗棕爪。支持高低可变跳跃、踩踏连击、红辣椒喷火球与波波奶茶护盾。
+                </p>
+              </div>
+
+              <div class="codex-card">
+                <div class="codex-visuals">
+                  <canvas
+                    id="codex-canvas-baobaolong"
+                    width="320"
+                    height="320"
+                    class="codex-canvas"
+                  ></canvas>
+                  <img
+                    src="images/暴暴龙/images copy 3.jpeg"
+                    alt="暴暴龙原图"
+                    class="codex-ref-img"
+                  />
+                </div>
+                <h3>暴暴龙 (Baobaolong)</h3>
+                <p>
+                  头顶锯齿状碎裂奶油蛋壳帽、冰蓝色皮肤、眉心深蓝双圆点眉、背部小蝠翼与冰薄荷色肚皮。会主动发射等离子能量球与蓄力冲撞，第
+                  30 关驾驶熔岩机甲出战。
+                </p>
+              </div>
+
+              <div class="codex-card">
+                <div class="codex-visuals">
+                  <canvas
+                    id="codex-canvas-minion1"
+                    width="320"
+                    height="320"
+                    class="codex-canvas"
+                  ></canvas>
+                  <img
+                    src="images/小紫兵/Unknown copy.jpeg"
+                    alt="双丸小紫兵原图"
+                    class="codex-ref-img"
+                  />
+                </div>
+                <h3>双丸头带小紫兵</h3>
+                <p>
+                  粉紫麻薯脸、左右紫色云朵双发髻、青色“bomb”发带、双颗黄绿大眼与牛仔背带裤。发现奶龙后会加速冲锋并投掷抛物线紫晶炸弹，可从上方踩扁击败。
+                </p>
+              </div>
+
+              <div class="codex-card">
+                <div class="codex-visuals">
+                  <canvas
+                    id="codex-canvas-minion2"
+                    width="320"
+                    height="320"
+                    class="codex-canvas"
+                  ></canvas>
+                  <img
+                    src="images/小紫兵/Unknown.jpeg"
+                    alt="独眼小紫兵原图"
+                    class="codex-ref-img"
+                  />
+                </div>
+                <h3>独眼铁帽小紫兵</h3>
+                <p>
+                  中央巨大黄绿独眼、米白圆帽配顶部红银金属尖刺与单肩折角背带裤。会主动弹簧高跳并发射水平尖刺弹，头顶尖刺不可直接踩踏，需用辣椒火球击败。
+                </p>
+              </div>
+
+              <div class="codex-card">
+                <div class="codex-visuals">
+                  <canvas
+                    id="codex-canvas-xiaoqi"
+                    width="320"
+                    height="320"
+                    class="codex-canvas"
+                  ></canvas>
+                  <img
+                    src="images/小七/images.jpeg"
+                    alt="小七原图"
+                    class="codex-ref-img"
+                  />
+                </div>
+                <h3>天才少年小七</h3>
+                <p>
+                  蓬松黑发配头顶标志性单根弯曲呆毛、珊瑚橙 T
+                  恤与深灰短裤。在每关终点旗杆旁迎接奶龙，并在奶龙跌落深谷时协助救援。
+                </p>
+              </div>
+            </div>
+            <div class="codex-section-heading">
+              <h3>冒险招式手册</h3>
+              <p>看清攻击，轻松应对。</p>
+            </div>
+            <div class="combat-codex-grid">
+              <article class="combat-card">
+                <canvas
+                  id="codex-fireball"
+                  width="360"
+                  height="220"
+                  aria-label="橙金辣椒火球"
+                ></canvas>
+                <h3>辣椒火球 <span>你的招式</span></h3>
+                <p>吃下红辣椒后按 J 发射，还能击碎敌人的飞弹。</p>
+              </article>
+              <article class="combat-card">
+                <canvas
+                  id="codex-bomb"
+                  width="360"
+                  height="220"
+                  aria-label="带引信的紫晶炸弹"
+                ></canvas>
+                <h3>紫晶炸弹 <span>小紫兵</span></h3>
+                <p>沿弧线飞来，落地后还会弹跳。留意亮起的引信！</p>
+              </article>
+              <article class="combat-card">
+                <canvas
+                  id="codex-bolt"
+                  width="360"
+                  height="220"
+                  aria-label="金属尾翼晶刺飞弹"
+                ></canvas>
+                <h3>晶刺飞弹 <span>铁帽紫兵</span></h3>
+                <p>水平快速飞行，把握时机跳过，或用火球拦截。</p>
+              </article>
+              <article class="combat-card">
+                <canvas
+                  id="codex-plasma"
+                  width="360"
+                  height="220"
+                  aria-label="带轨道环的紫色等离子球"
+                ></canvas>
+                <h3>等离子球 <span>暴暴龙</span></h3>
+                <p>旋转的能量环正在蓄力，别站在暴暴龙正前方。</p>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <!-- 排行榜弹窗 (Cloudflare Pages 全球/本地真实排行) -->
+        <section id="modal-leaderboard" class="modal-overlay hidden">
+          <div class="modal-card glass-panel wide-card">
+            <div class="modal-header">
+              <div>
+                <h2>冒险荣誉榜 <span class="heading-tag">TOP 10</span></h2>
+                <p class="modal-sub" id="leaderboard-meta-line">
+                  榜首：虚位以待 · 仅收录真实玩家闯关战绩
+                </p>
+              </div>
+              <button
+                class="ui-btn icon-btn btn-close-modal"
+                aria-label="关闭弹窗"
+              >
+                <svg class="icon"><use href="#i-close" /></svg>
+              </button>
+            </div>
+            <div class="leaderboard-tabs">
+              <button class="ui-btn tab-btn active" data-tab="score">
+                总分榜
+              </button>
+              <button class="ui-btn tab-btn" data-tab="speedrun">速通榜</button>
+              <button class="ui-btn tab-btn" data-tab="drumsticks">
+                鸡腿榜
+              </button>
+            </div>
+            <div class="table-wrap">
+              <table class="clean-table">
+                <thead>
+                  <tr>
+                    <th>排名</th>
+                    <th>玩家昵称</th>
+                    <th>总得分</th>
+                    <th>收集鸡腿</th>
+                    <th>最高关卡</th>
+                    <th>总耗时</th>
+                    <th>更新时间</th>
+                  </tr>
+                </thead>
+                <tbody id="leaderboard-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 暂停菜单弹窗 -->
+        <section id="modal-pause" class="modal-overlay hidden">
+          <div class="modal-card glass-panel small-card">
+            <h2>休息一下，快乐待续</h2>
+            <p id="pause-level-info" class="modal-sub">第 1 关 · 初入青草地</p>
+            <div class="menu-btn-col">
+              <button id="btn-resume" class="ui-btn primary-btn">
+                继续游戏
+              </button>
+              <button id="btn-restart-level" class="ui-btn secondary-btn">
+                重新开始本关
+              </button>
+              <button id="btn-pause-map" class="ui-btn secondary-btn">
+                关卡选择
+              </button>
+              <button id="btn-pause-home" class="ui-btn ghost-btn">
+                返回主菜单
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 过关结算 / 失败重开弹窗 -->
+        <section id="modal-result" class="modal-overlay hidden">
+          <div class="modal-card glass-panel small-card">
+            <h2 id="result-title">本关完成</h2>
+            <div id="result-stars" class="result-stars-big"></div>
+            <p id="result-subtitle" class="modal-sub">成功抵达终点旗帜</p>
+            <div class="result-stats-box">
+              <div class="stat-cell">
+                <span>本关得分</span><b id="result-score">0</b>
+              </div>
+              <div class="stat-cell">
+                <span>收集鸡腿</span><b id="result-drumsticks">0</b>
+              </div>
+              <div class="stat-cell">
+                <span>黄金鸡腿</span><b id="result-golden">0 / 3</b>
+              </div>
+              <div class="stat-cell">
+                <span>通关耗时</span><b id="result-time">00:00</b>
+              </div>
+            </div>
+            <div class="menu-btn-col">
+              <button id="btn-next-level" class="ui-btn primary-btn">
+                下一关
+              </button>
+              <button id="btn-retry-level" class="ui-btn secondary-btn">
+                重玩本关
+              </button>
+              <button id="btn-result-map" class="ui-btn ghost-btn">
+                关卡选择
+              </button>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <div class="menu-shell-note">
+        <span
+          ><svg class="icon"><use href="#i-keyboard" /></svg><kbd>A</kbd
+          ><kbd>D</kbd> 移动 <em>·</em><kbd>空格</kbd> 跳跃 <em>·</em
+          ><kbd>J</kbd> 喷火</span
+        ><span
+          >为每一次小小的勇敢，欢呼。<svg class="icon">
+            <use href="#i-spark" /></svg
+        ></span>
+      </div>
+
+      <!-- 底部辅助控制与移动端人体工学手柄栏 -->
+      <footer id="touch-controls" class="glass-panel">
+        <div class="dpad-group" id="mobile-dpad-zone">
+          <button
+            id="touch-left"
+            class="ui-btn ghost-btn pad-btn"
+            aria-label="左移"
+          >
+            <span class="pad-icon">←</span>
+            <span class="pad-text">左移 (A)</span>
+          </button>
+          <button
+            id="touch-right"
+            class="ui-btn ghost-btn pad-btn"
+            aria-label="右移"
+          >
+            <span class="pad-text">右移 (D)</span>
+            <span class="pad-icon">→</span>
+          </button>
+        </div>
+        <div class="status-hint" id="footer-weather-desc">
+          本关天气：晴朗 — 标准物理 · 鸡腿得分 +10%
+        </div>
+        <div class="action-group" id="mobile-action-zone">
+          <button
+            id="touch-fire"
+            class="ui-btn secondary-btn action-pad-btn"
+            aria-label="喷火球"
+          >
+            <svg class="icon"><use href="#i-fire" /></svg>
+            <span class="pad-text">喷火球 (J)</span>
+          </button>
+          <button
+            id="touch-jump"
+            class="ui-btn primary-btn action-pad-btn jump-pad-btn"
+            aria-label="跳跃"
+          >
+            <svg class="icon"><use href="#i-jump" /></svg>
+            <span class="pad-text">跳跃 (W / 空格)</span>
+          </button>
+        </div>
+      </footer>
+    </div>
+
+    <script src="js/sprites.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/weather.js"></script>
+    <script src="js/levels.js"></script>
+    <script src="js/leaderboard.js"></script>
+    <script src="js/physics.js"></script>
+    <script src="js/menu-art.js"></script>
+    <script src="js/main.js"></script>
+  </body>
 </html>

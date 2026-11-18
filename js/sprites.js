@@ -1,5 +1,5 @@
 /**
- * 《奶龙大冒险：鸡腿保卫战》- 高还原度 3D-SDF 像素建模与精灵图引擎 (sprites.js)
+ * 《奶龙大冒险：鸡腿保卫战》- 柔光玩具材质与高清角色精灵引擎 (sprites.js)
  *
  * 严格依据本地参考图库 (images/奶龙, images/暴暴龙, images/小紫兵, images/小七) 进行 3D-SDF 体积像素建模：
  * 1. 奶龙 (Nailong)：光滑圆润的明黄色包子头（无虚假头角）、翠绿色虹膜大眼、奶油白大肚皮（带跑步物理弹性晃动）、粉色肉垫+3颗棕色小爪子、短小摇摆尾巴。
@@ -17,13 +17,8 @@ window.NailongAdventure = window.NailongAdventure || {};
   'use strict';
 
   // ============================================================================
-  // 1. 3D-SDF 基础数学与正交光线步进像素渲染器 (Orthographic Raymarching Pixel Engine)
+  // 1. 3D-SDF 基础数学与正交光线步进渲染器
   // ============================================================================
-  const BAYER2 = [
-    [-4, 3],
-    [4, -3],
-  ];
-
   function smin(a, b, k) {
     const h = Math.max(k - Math.abs(a - b), 0) / k;
     return Math.min(a, b) - h * h * k * 0.25;
@@ -58,11 +53,16 @@ window.NailongAdventure = window.NailongAdventure || {};
   }
 
   function quantizeRamp(shade, ramp) {
-    if (shade > 0.85) return ramp[4];
-    if (shade > 0.65) return ramp[3];
-    if (shade > 0.44) return ramp[2];
-    if (shade > 0.25) return ramp[1];
-    return ramp[0];
+    // 连续插值保留饱满色彩，避免低分辨率色阶和抖动噪点。
+    const t = Math.max(0, Math.min(1, shade)) * (ramp.length - 1);
+    const lo = Math.floor(t);
+    const hi = Math.min(ramp.length - 1, lo + 1);
+    const f = t - lo;
+    return [
+      ramp[lo][0] + (ramp[hi][0] - ramp[lo][0]) * f,
+      ramp[lo][1] + (ramp[hi][1] - ramp[lo][1]) * f,
+      ramp[lo][2] + (ramp[hi][2] - ramp[lo][2]) * f,
+    ];
   }
 
   function addOutlinePass(rgba, w, h, rgb) {
@@ -80,7 +80,7 @@ window.NailongAdventure = window.NailongAdventure || {};
           rgba[idx] = rgb[0];
           rgba[idx + 1] = rgb[1];
           rgba[idx + 2] = rgb[2];
-          rgba[idx + 3] = 255;
+          rgba[idx + 3] = 150;
         }
       }
     }
@@ -91,7 +91,8 @@ window.NailongAdventure = window.NailongAdventure || {};
     c.width = w;
     c.height = h;
     const ctx = c.getContext('2d');
-    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     return { canvas: c, ctx };
   }
 
@@ -111,9 +112,9 @@ window.NailongAdventure = window.NailongAdventure || {};
   }
 
   /**
-   * 高速 3D-SDF 像素帧渲染器（带法线光照、Bayer 抖动与 1px 像素描边）
+   * 缓存式 3D-SDF 渲染：柔和主光、天空补光、奶油高光与轻轮廓。
    */
-  function renderSdfCanvas(w, h, worldHalf, sceneFn, colorFn, outlineRgb = [43, 30, 22]) {
+  function renderSdfCanvas(w, h, worldHalf, sceneFn, colorFn, outlineRgb = [116, 75, 32]) {
     const rgba = new Uint8ClampedArray(w * h * 4);
     const lx = -0.36, ly = -0.52, lz = 0.77;
 
@@ -139,7 +140,7 @@ window.NailongAdventure = window.NailongAdventure || {};
         }
         if (!hit) continue;
 
-        const eps = 0.32;
+        const eps = 0.19;
         const nx = sceneFn(wx + eps, wy, z) - d;
         const ny = sceneFn(wx, wy + eps, z) - d;
         const nz = sceneFn(wx, wy, z + eps) - d;
@@ -149,16 +150,18 @@ window.NailongAdventure = window.NailongAdventure || {};
         const unz = nz / len;
 
         const ndotl = Math.max(0, unx * lx + uny * ly + unz * lz);
-        const rim = Math.pow(1 - Math.max(0, unz), 2.3) * 0.18;
-        const dither = BAYER2[py & 1][px & 1] * 0.008;
-        const shade = Math.min(1, Math.max(0, ndotl * 0.82 + 0.22 + rim + dither));
+        const rim = Math.pow(1 - Math.max(0, unz), 2.3) * 0.1;
+        const skyFill = Math.max(0, -uny) * 0.09;
+        const shade = Math.min(1, Math.max(0, ndotl * 0.66 + 0.22 + skyFill + rim));
+        const halfDot = Math.max(0, unx * -0.195 + uny * -0.282 + unz * 0.94);
+        const gloss = Math.pow(halfDot, 25) * 0.17;
 
         const rgb = colorFn(wx, wy, z, unx, uny, unz, shade, px, py);
         if (!rgb) continue;
         const idx = (py * w + px) * 4;
-        rgba[idx] = rgb[0];
-        rgba[idx + 1] = rgb[1];
-        rgba[idx + 2] = rgb[2];
+        rgba[idx] = rgb[0] + (255 - rgb[0]) * gloss;
+        rgba[idx + 1] = rgb[1] + (255 - rgb[1]) * gloss;
+        rgba[idx + 2] = rgb[2] + (255 - rgb[2]) * gloss;
         rgba[idx + 3] = 255;
       }
     }
@@ -171,11 +174,11 @@ window.NailongAdventure = window.NailongAdventure || {};
   // 2. 权威色板定义 (严格对齐奶龙 IP 原图色彩)
   // ============================================================================
   const NAILONG_YELLOW_RAMP = [
-    [208, 118, 16], // 暖琥珀深暗部
-    [236, 152, 22], // 蜂蜜暖阴影
-    [252, 198, 38], // 经典奶龙金黄中调
-    [255, 222, 68], // 明亮奶龙黄
-    [255, 244, 138], // 柠檬黄顶高光
+    [197, 115, 22],
+    [230, 155, 23],
+    [251, 194, 31],
+    [255, 216, 55],
+    [255, 237, 116],
   ];
 
   // 吃到红辣椒后的喷火形态奶龙色板（全身泛红金火焰色）
@@ -311,7 +314,7 @@ window.NailongAdventure = window.NailongAdventure || {};
       ? 0.5
       : 0;
 
-    const bodyRamp = isFireMode || isAttack ? NAILONG_FIRE_RAMP : NAILONG_YELLOW_RAMP;
+    const bodyRamp = isFireMode ? NAILONG_FIRE_RAMP : NAILONG_YELLOW_RAMP;
 
     const evalParts = (x, y, z) => {
       const dyNeck = y - (-4 + bob);
@@ -1051,188 +1054,170 @@ window.NailongAdventure = window.NailongAdventure || {};
   // ============================================================================
   // 7. 核心收集物与道具 3D-SDF 像素模型 (大鸡腿、黄金鸡腿、红辣椒、变大奶茶药水)
   // ============================================================================
-  function buildDrumstickSprite(isGolden = false, size = 36) {
-    const half = 20;
-    const ROAST_RAMP = isGolden
-      ? [
-          [184, 118, 12],
-          [224, 162, 20],
-          [255, 206, 38],
-          [255, 234, 88],
-          [255, 252, 188],
-        ]
-      : [
-          [142, 54, 12],
-          [188, 82, 20],
-          [232, 118, 34],
-          [255, 158, 58],
-          [255, 208, 118],
-        ];
-
-    return renderSdfCanvas(
-      size,
-      size,
-      half,
-      (x, y, z) => {
-        const rx = (x + y) * 0.707;
-        const ry = (y - x) * 0.707;
-        const meat = sdEllipsoid(rx, ry, z, -3.8, 0, 2, 11.2, 8.8, 9.5);
-        const boneShaft = sdCapsule(x, y, z, 3, 3, 1, 12.5, 12.5, 1, 2.8);
-        const knob1 = sdSphere(x, y, z, 14.2, 11.2, 1.5, 3.0);
-        const knob2 = sdSphere(x, y, z, 11.2, 14.2, 1.5, 3.0);
-        return Math.min(smin(meat, boneShaft, 1.2), smin(knob1, knob2, 1.8));
-      },
-      (wx, wy, _wz, _nx, _ny, _nz, shade) => {
-        if (wx + wy > 11.5) {
-          return shade > 0.45 ? [255, 252, 245] : [214, 206, 196];
-        }
-        const stripe = Math.abs((((wx - wy + 20) / 4.5) % 2) - 1);
-        if (stripe < 0.22 && Math.hypot(wx + 3, wy + 3) < 6.5) {
-          return isGolden ? [204, 134, 14] : [128, 46, 10];
-        }
-        return quantizeRamp(shade, ROAST_RAMP);
-      },
-      isGolden ? [92, 52, 8] : [48, 22, 10]
-    );
+  // 道具在设计坐标 80 × 80 上绘制，缓存为高分辨率图像；游戏碰撞和尺寸保持原样。
+  function paintToyIcon(size, painter) {
+    const { canvas, ctx } = createOffscreenCanvas(size, size);
+    ctx.scale(size / 80, size / 80);
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    painter(ctx);
+    return canvas;
   }
 
-  function buildChiliSprite(size = 36) {
-    const half = 18;
-    const CHILI_RAMP = [
-      [138, 12, 22],
-      [188, 22, 32],
-      [236, 42, 46],
-      [255, 78, 68],
-      [255, 168, 152],
-    ];
-    const STEM_RAMP = [
-      [18, 92, 36],
-      [34, 138, 56],
-      [58, 184, 82],
-      [92, 218, 114],
-      [152, 244, 168],
-    ];
-    return renderSdfCanvas(
-      size,
-      size,
-      half,
-      (x, y, z) => {
-        // 弯曲饱满的红辣椒 + 翠绿果蒂
-        const bendX = x - y * y * 0.025;
-        const taper = Math.max(0.28, 1 - (y + 6) * 0.036);
-        const body = sdEllipsoid(bendX / taper, y, z, 0, 2.0, 2, 7.6, 11.5, 7.2);
-        const cap = sdEllipsoid(x, y, z, -1.0, -9.2, 2, 4.6, 2.4, 4.4);
-        const stem = sdCapsule(x, y, z, -1.0, -10.5, 2, 2.5, -14.8, 2, 1.5);
-        return Math.min(body, smin(cap, stem, 1.2));
-      },
-      (wx, wy, _wz, _nx, _ny, _nz, shade) => {
-        if (wy < -7.5) return quantizeRamp(shade, STEM_RAMP);
-        return quantizeRamp(shade, CHILI_RAMP);
-      },
-      [52, 14, 16]
-    );
+  function toyGradient(ctx, x0, y0, x1, y1, stops) {
+    const gradient = ctx.createLinearGradient(x0, y0, x1, y1);
+    stops.forEach(([offset, color]) => gradient.addColorStop(offset, color));
+    return gradient;
   }
 
-  function buildPotionSprite(size = 36) {
-    const half = 18;
-    const MINT_TEA_RAMP = [
-      [24, 132, 92],
-      [42, 176, 122],
-      [76, 216, 156],
-      [118, 238, 184],
-      [182, 252, 218],
-    ];
-    return renderSdfCanvas(
-      size,
-      size,
-      half,
-      (x, y, z) => {
-        const cupW = 9.6 - Math.max(0, y + 5) * 0.15;
-        const dCup = Math.max(Math.hypot(x, z) - cupW, Math.abs(y - 4.0) - 9.8);
-        const lidRim = Math.max(Math.hypot(x, z) - 10.8, Math.abs(y - -6.2) - 1.4);
-        const dome = sdEllipsoid(x, y, z, 0, -7.5, 0, 9.5, 4.5, 9.5);
-        const straw = sdCapsule(x, y, z, 2.0, -7, 1, 4.8, -14.8, 1, 1.8);
-        return Math.min(dCup, lidRim, dome, straw);
-      },
-      (wx, wy, wz, _nx, _ny, _nz, shade) => {
-        if (wy < -9.2 && wx > 0.8) {
-          return Math.floor((wy + wx) * 0.8) % 2 === 0 ? [255, 104, 132] : [255, 240, 245];
-        }
-        if (wy < -4.8) return shade > 0.5 ? [255, 255, 255] : [222, 236, 245];
-        if (wy < -1.0) return quantizeRamp(shade, NAILONG_CREAM_RAMP);
-        if (wz > 3 && wy > 7.2) {
-          const pearls = [
-            [-4.0, 9.8],
-            [0, 10.8],
-            [4.0, 9.8],
-          ];
-          for (const [bx, by] of pearls) {
-            if (Math.hypot(wx - bx, wy - by) < 1.9) return [42, 26, 20];
-          }
-        }
-        return quantizeRamp(shade, MINT_TEA_RAMP);
-      },
-      [26, 48, 38]
-    );
+  function buildDrumstickSprite(isGolden = false, size = 96) {
+    return paintToyIcon(size, (ctx) => {
+      ctx.save();
+      ctx.translate(40, 40);
+      ctx.rotate(-0.67);
+      // 奶油色双骨节与完整骨柄。
+      ctx.beginPath();
+      ctx.moveTo(-5, 5);
+      ctx.lineTo(-5, 24);
+      ctx.bezierCurveTo(-17, 24, -16, 38, -7, 36);
+      ctx.quadraticCurveTo(0, 33, 6, 36);
+      ctx.bezierCurveTo(16, 38, 17, 24, 5, 24);
+      ctx.lineTo(5, 5);
+      ctx.closePath();
+      ctx.fillStyle = toyGradient(ctx, -8, 12, 12, 33, [[0, '#ffffff'], [.48, '#fff7de'], [1, '#d6bd91']]);
+      ctx.strokeStyle = '#a77a43';
+      ctx.lineWidth = 1.8;
+      ctx.fill(); ctx.stroke();
+      // 梨形烤肉，浅色上缘与深色焦糖底部。
+      ctx.beginPath();
+      ctx.moveTo(0, -32);
+      ctx.bezierCurveTo(-18, -32, -25, -18, -21, -5);
+      ctx.bezierCurveTo(-18, 6, -9, 15, 0, 17);
+      ctx.bezierCurveTo(10, 15, 19, 5, 22, -6);
+      ctx.bezierCurveTo(26, -21, 17, -32, 0, -32);
+      ctx.closePath();
+      ctx.fillStyle = toyGradient(ctx, -14, -26, 17, 15, isGolden
+        ? [[0, '#fff7b7'], [.28, '#ffe46a'], [.63, '#f3ad27'], [1, '#c17711']]
+        : [[0, '#ffd589'], [.28, '#f9a84b'], [.62, '#d37328'], [1, '#9d4b1f']]);
+      ctx.strokeStyle = isGolden ? '#b37b22' : '#934b24';
+      ctx.lineWidth = 2;
+      ctx.fill(); ctx.stroke();
+      // 细腻、弯曲的烤纹，避免黑色像素斑点。
+      ctx.strokeStyle = isGolden ? 'rgba(174,111,17,.55)' : 'rgba(135,60,24,.5)';
+      ctx.lineWidth = 2.4;
+      [-13, -4, 5].forEach((y) => {
+        ctx.beginPath(); ctx.moveTo(-9, y - 4); ctx.quadraticCurveTo(-2, y - 1, 7, y + 1); ctx.stroke();
+      });
+      ctx.beginPath(); ctx.moveTo(-11, -23); ctx.bezierCurveTo(-17, -19, -18, -13, -16, -8);
+      ctx.strokeStyle = 'rgba(255,255,240,.7)'; ctx.lineWidth = 4.2; ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(-6, -26, 3, 1.4, -.35, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff9de'; ctx.fill();
+      ctx.restore();
+    });
   }
 
-  function buildHeartSprite(size = 36) {
-    const half = 18;
-    const HEART_RAMP = [
-      [158, 18, 52],
-      [212, 34, 78],
-      [244, 63, 94],
-      [251, 113, 133],
-      [255, 205, 215],
-    ];
-    return renderSdfCanvas(
-      size,
-      size,
-      half,
-      (x, y, z) => {
-        const lobeL = sdSphere(x, y, z, -5.2, -3.5, 1, 7.6);
-        const lobeR = sdSphere(x, y, z, 5.2, -3.5, 1, 7.6);
-        const tip = sdCapsule(x, y, z, -4.5, -1.0, 1, 0, 10.5, 1, 5.8);
-        const tipR = sdCapsule(x, y, z, 4.5, -1.0, 1, 0, 10.5, 1, 5.8);
-        return smin(smin(lobeL, lobeR, 2.2), smin(tip, tipR, 3.0), 2.8);
-      },
-      (wx, wy, _wz, _nx, _ny, _nz, shade) => {
-        if (Math.hypot(wx + 5.5, wy + 5.5) < 3.0) {
-          return [255, 245, 248];
-        }
-        return quantizeRamp(shade, HEART_RAMP);
-      },
-      [68, 12, 28]
-    );
+  function buildChiliSprite(size = 96) {
+    return paintToyIcon(size, (ctx) => {
+      // 单一流畅外轮廓：饱满根部自然收成上翘的小尖角。
+      ctx.beginPath();
+      ctx.moveTo(34, 20);
+      ctx.bezierCurveTo(15, 25, 19, 49, 36, 61);
+      ctx.bezierCurveTo(47, 69, 57, 69, 66, 62);
+      ctx.bezierCurveTo(54, 62, 49, 51, 48, 40);
+      ctx.bezierCurveTo(47, 26, 44, 20, 34, 20);
+      ctx.closePath();
+      ctx.fillStyle = toyGradient(ctx, 22, 25, 51, 62, [[0, '#ffb7a1'], [.22, '#ff645b'], [.64, '#e83846'], [1, '#b91f43']]);
+      ctx.strokeStyle = '#a63b45'; ctx.lineWidth = 1.8; ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(29, 30); ctx.bezierCurveTo(24, 39, 32, 50, 38, 53);
+      ctx.strokeStyle = 'rgba(255,244,225,.74)'; ctx.lineWidth = 4.4; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(42, 57); ctx.quadraticCurveTo(47, 62, 52, 63);
+      ctx.strokeStyle = 'rgba(255,139,139,.7)'; ctx.lineWidth = 1.7; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(27, 23); ctx.quadraticCurveTo(34, 14, 44, 22);
+      ctx.lineTo(47, 28); ctx.quadraticCurveTo(41, 26, 38, 28);
+      ctx.lineTo(33, 25); ctx.lineTo(27, 27); ctx.closePath();
+      ctx.fillStyle = toyGradient(ctx, 29, 15, 43, 29, [[0, '#a1e984'], [.48, '#5eae62'], [1, '#297e58']]);
+      ctx.strokeStyle = '#3a8054'; ctx.lineWidth = 1.6; ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(36, 21); ctx.bezierCurveTo(36, 13, 42, 11, 46, 12);
+      ctx.strokeStyle = '#3a8054'; ctx.lineWidth = 6; ctx.stroke();
+      ctx.strokeStyle = '#a2dc86'; ctx.lineWidth = 2.4; ctx.stroke();
+    });
   }
 
-  function buildAtkGemSprite(size = 36) {
-    const half = 18;
-    const GEM_RAMP = [
-      [146, 64, 14],
-      [217, 119, 6],
-      [245, 158, 11],
-      [251, 191, 36],
-      [254, 243, 199],
-    ];
-    return renderSdfCanvas(
-      size,
-      size,
-      half,
-      (x, y, z) => {
-        const core = sdEllipsoid(x, y, z, 0, 0, 1, 9.5, 12.5, 8.5);
-        const wingL = sdCapsule(x, y, z, -11, 2, 1, -3, -9, 1, 3.8);
-        const wingR = sdCapsule(x, y, z, 11, 2, 1, 3, -9, 1, 3.8);
-        return smin(core, Math.min(wingL, wingR), 2.0);
-      },
-      (wx, wy, _wz, _nx, _ny, _nz, shade) => {
-        if (Math.abs(wx) < 2.4 && Math.abs(wy) < 6.5) {
-          return [255, 252, 235];
-        }
-        return quantizeRamp(shade, GEM_RAMP);
-      },
-      [69, 26, 3]
-    );
+  function buildPotionSprite(size = 96) {
+    return paintToyIcon(size, (ctx) => {
+      // 杯身先画出透亮边框，再绘制奶盖、薄荷饮料与珍珠。
+      ctx.beginPath(); ctx.moveTo(21, 25); ctx.lineTo(27, 68);
+      ctx.quadraticCurveTo(40, 75, 53, 68); ctx.lineTo(59, 25); ctx.closePath();
+      ctx.fillStyle = toyGradient(ctx, 22, 25, 57, 64, [[0, '#f8fff9'], [.35, '#d9faeb'], [.75, '#b1e5d5'], [1, '#83bcad']]);
+      ctx.strokeStyle = '#7ca99f'; ctx.lineWidth = 1.8; ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(24, 36); ctx.quadraticCurveTo(41, 41, 56, 36);
+      ctx.lineTo(52, 66); ctx.quadraticCurveTo(40, 71, 28, 66); ctx.closePath();
+      ctx.fillStyle = toyGradient(ctx, 26, 40, 53, 66, [[0, '#9cebd0'], [.55, '#55c2a8'], [1, '#2b927e']]); ctx.fill();
+      [[32, 61, 2.8], [39, 64, 3], [46, 61, 2.7], [36, 57, 2.5], [46, 56, 2.2]].forEach(([x, y, r]) => {
+        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fillStyle = toyGradient(ctx, x-r, y-r, x+r, y+r, [[0, '#9a775b'], [.4, '#674c3d'], [1, '#382f2b']]); ctx.fill();
+        ctx.beginPath(); ctx.arc(x-.7, y-.8, .7, 0, Math.PI*2); ctx.fillStyle = '#d7b893'; ctx.fill();
+      });
+      // 小小奶龙标志，保持道具作为“变大奶茶”的识别性。
+      ctx.beginPath(); ctx.ellipse(40, 48, 8, 6.5, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff7dc'; ctx.fill();
+      ctx.fillStyle = '#947552';
+      [37.3,42.7].forEach((x) => { ctx.beginPath(); ctx.arc(x,46.5,.9,0,Math.PI*2); ctx.fill(); });
+      ctx.beginPath(); ctx.arc(40,48,2,0,Math.PI); ctx.strokeStyle='#c18b63'; ctx.lineWidth=1; ctx.stroke();
+      // 弯折吸管与奶油杯盖。
+      ctx.beginPath(); ctx.moveTo(45, 24); ctx.lineTo(47, 10); ctx.lineTo(57, 7);
+      ctx.strokeStyle = '#bc6172'; ctx.lineWidth = 5.8; ctx.stroke();
+      ctx.strokeStyle = '#ffb2ba'; ctx.lineWidth = 3; ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(40, 23, 19, 7, 0, Math.PI, Math.PI * 2);
+      ctx.lineTo(59,26); ctx.lineTo(21,26); ctx.closePath();
+      ctx.fillStyle = toyGradient(ctx, 30, 15, 43, 29, [[0, '#ffffff'], [.6, '#fffae9'], [1, '#d9e6d8']]);
+      ctx.strokeStyle = '#7ca99f'; ctx.lineWidth = 1.5; ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(40, 26, 21, 4.3, 0, 0, Math.PI * 2);
+      ctx.fillStyle = toyGradient(ctx, 25, 23, 45, 30, [[0, '#effff9'], [1, '#99d7c0']]); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(27, 34); ctx.lineTo(30.5, 55);
+      ctx.strokeStyle='rgba(255,255,255,.8)'; ctx.lineWidth=3; ctx.stroke();
+    });
+  }
+
+  function buildHeartSprite(size = 96) {
+    return paintToyIcon(size, (ctx) => {
+      ctx.beginPath(); ctx.moveTo(40, 68);
+      ctx.bezierCurveTo(35, 63, 13, 47, 13, 31);
+      ctx.bezierCurveTo(13, 11, 32, 10, 40, 24);
+      ctx.bezierCurveTo(48, 10, 67, 11, 67, 31);
+      ctx.bezierCurveTo(67, 47, 45, 63, 40, 68); ctx.closePath();
+      ctx.fillStyle = toyGradient(ctx, 21, 18, 58, 62, [[0, '#ffd2d1'], [.25, '#ff8e9d'], [.62, '#ee5579'], [1, '#be365f']]);
+      ctx.strokeStyle = '#b84a68'; ctx.lineWidth=1.7; ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(24, 23); ctx.bezierCurveTo(18, 25, 18, 32, 21, 36);
+      ctx.strokeStyle='rgba(255,255,249,.88)'; ctx.lineWidth=5; ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(29,21,2.8,1.7,-.3,0,Math.PI*2); ctx.fillStyle='#fffaf1'; ctx.fill();
+      ctx.beginPath(); ctx.moveTo(44, 59); ctx.quadraticCurveTo(57, 49, 60, 40);
+      ctx.strokeStyle='rgba(255,178,187,.6)'; ctx.lineWidth=1.7; ctx.stroke();
+    });
+  }
+
+  function buildAtkGemSprite(size = 96) {
+    return paintToyIcon(size, (ctx) => {
+      // 明确的多面切割宝石与中央闪电，让攻击增益一眼可辨。
+      ctx.beginPath(); ctx.moveTo(22, 17); ctx.lineTo(58,17); ctx.lineTo(71,33);
+      ctx.lineTo(40,70); ctx.lineTo(9,33); ctx.closePath();
+      ctx.fillStyle='#e9a42d'; ctx.strokeStyle='#bc8737'; ctx.lineWidth=1.8; ctx.fill(); ctx.stroke();
+      const facet = (points, fill) => {
+        ctx.beginPath(); points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y)); ctx.closePath();ctx.fillStyle=fill;ctx.fill();
+      };
+      facet([[22,17],[32,17],[24,33],[9,33]], '#ffe7a0');
+      facet([[32,17],[48,17],[56,33],[24,33]], '#fff3c2');
+      facet([[48,17],[58,17],[71,33],[56,33]], '#ffd374');
+      facet([[9,33],[24,33],[40,70]], '#eeb13d');
+      facet([[56,33],[71,33],[40,70]], '#d98d26');
+      facet([[24,33],[56,33],[40,70]], toyGradient(ctx,29,32,48,65,[[0,'#ffd85b'],[1,'#efa128']]));
+      ctx.beginPath(); ctx.moveTo(9,33);ctx.lineTo(71,33);
+      ctx.strokeStyle='rgba(255,255,231,.75)'; ctx.lineWidth=1;ctx.stroke();
+      ctx.beginPath();ctx.moveTo(41,25);ctx.lineTo(30,43);ctx.lineTo(38,43);
+      ctx.lineTo(36,57);ctx.lineTo(51,37);ctx.lineTo(43,37);ctx.lineTo(47,25);ctx.closePath();
+      ctx.fillStyle='#fffdf0';ctx.strokeStyle='rgba(194,127,29,.3)';ctx.lineWidth=1;ctx.fill();ctx.stroke();
+      ctx.beginPath();ctx.moveTo(22,22);ctx.lineTo(17,29);ctx.strokeStyle='#fffdf0';ctx.lineWidth=2.5;ctx.stroke();
+    });
   }
 
   // ============================================================================
@@ -1267,6 +1252,20 @@ window.NailongAdventure = window.NailongAdventure || {};
     codex: {},
   };
 
+  // 动画首次使用时生成，避免首次打开菜单时同步计算所有形态。
+  // 结果仍然是普通 Canvas；镜像帧复用右侧缓存，无逐帧光线步进。
+  function lazyFrame(frames, index, build) {
+    Object.defineProperty(frames, index, {
+      configurable: true,
+      enumerable: true,
+      get() {
+        const sprite = build();
+        Object.defineProperty(frames, index, { value: sprite, configurable: true, enumerable: true });
+        return sprite;
+      },
+    });
+  }
+
   function initSprites() {
     if (cache.initialized) return;
     cache.initialized = true;
@@ -1288,13 +1287,10 @@ window.NailongAdventure = window.NailongAdventure || {};
       cache.nailong.fire.left[p.name] = [];
 
       for (let i = 0; i < p.count; i++) {
-        const normR = buildNailongSprite(p.name, i, false, 64);
-        cache.nailong.normal.right[p.name].push(normR);
-        cache.nailong.normal.left[p.name].push(flipCanvasHorizontal(normR));
-
-        const fireR = buildNailongSprite(p.name, i, true, 64);
-        cache.nailong.fire.right[p.name].push(fireR);
-        cache.nailong.fire.left[p.name].push(flipCanvasHorizontal(fireR));
+        lazyFrame(cache.nailong.normal.right[p.name], i, () => buildNailongSprite(p.name, i, false, 112));
+        lazyFrame(cache.nailong.normal.left[p.name], i, () => flipCanvasHorizontal(cache.nailong.normal.right[p.name][i]));
+        lazyFrame(cache.nailong.fire.right[p.name], i, () => buildNailongSprite(p.name, i, true, 112));
+        lazyFrame(cache.nailong.fire.left[p.name], i, () => flipCanvasHorizontal(cache.nailong.fire.right[p.name][i]));
       }
     }
 
@@ -1307,59 +1303,59 @@ window.NailongAdventure = window.NailongAdventure || {};
 
       for (let i = 0; i < 2; i++) {
         // 暴暴龙正面微偏左，翻转作为朝右，原图作为朝左
-        const normL = buildBaobaolongSprite(pose, i, false, 68);
-        const normR = flipCanvasHorizontal(normL);
-        cache.baobaolong.normal.left[pose].push(normL);
-        cache.baobaolong.normal.right[pose].push(normR);
-
-        const rageL = buildBaobaolongSprite(pose, i, true, 68);
-        const rageR = flipCanvasHorizontal(rageL);
-        cache.baobaolong.rage.left[pose].push(rageL);
-        cache.baobaolong.rage.right[pose].push(rageR);
+        lazyFrame(cache.baobaolong.normal.left[pose], i, () => buildBaobaolongSprite(pose, i, false, 112));
+        lazyFrame(cache.baobaolong.normal.right[pose], i, () => flipCanvasHorizontal(cache.baobaolong.normal.left[pose][i]));
+        lazyFrame(cache.baobaolong.rage.left[pose], i, () => buildBaobaolongSprite(pose, i, true, 112));
+        lazyFrame(cache.baobaolong.rage.right[pose], i, () => flipCanvasHorizontal(cache.baobaolong.rage.left[pose][i]));
       }
     }
 
     // 3. 生成小紫兵双变体精灵图 (双丸头带型 & 独眼弹簧铁帽型)
     for (const variant of ['twin', 'cyclops']) {
       for (let i = 0; i < 2; i++) {
-        const cL = buildMinionSprite(variant, i, false, 48);
-        const cR = flipCanvasHorizontal(cL);
-        cache.minion[variant].left.push(cL);
-        cache.minion[variant].right.push(cR);
+        lazyFrame(cache.minion[variant].left, i, () => buildMinionSprite(variant, i, false, 96));
+        lazyFrame(cache.minion[variant].right, i, () => flipCanvasHorizontal(cache.minion[variant].left[i]));
       }
-      cache.minion[variant].squashed = buildMinionSprite(variant, 0, true, 48);
+      Object.defineProperty(cache.minion[variant], 'squashed', {
+        configurable: true,
+        get() {
+          const sprite = buildMinionSprite(variant, 0, true, 96);
+          Object.defineProperty(cache.minion[variant], 'squashed', { value: sprite, configurable: true });
+          return sprite;
+        },
+      });
     }
 
     // 4. 生成小七精灵图
     for (let i = 0; i < 2; i++) {
-      cache.xiaoqi.idle.push(buildXiaoQiSprite(false, i, 64));
-      cache.xiaoqi.cheer.push(buildXiaoQiSprite(true, i, 64));
+      lazyFrame(cache.xiaoqi.idle, i, () => buildXiaoQiSprite(false, i, 112));
+      lazyFrame(cache.xiaoqi.cheer, i, () => buildXiaoQiSprite(true, i, 112));
     }
 
     // 5. 生成核心收集物与道具精灵图
-    cache.items.drumstick = buildDrumstickSprite(false, 36);
-    cache.items.goldenDrumstick = buildDrumstickSprite(true, 40);
-    cache.items.chili = buildChiliSprite(36);
-    cache.items.potion = buildPotionSprite(36);
-    cache.items.heart = buildHeartSprite(36);
-    cache.items.atkGem = buildAtkGemSprite(36);
+    cache.items.drumstick = buildDrumstickSprite(false);
+    cache.items.goldenDrumstick = buildDrumstickSprite(true);
+    cache.items.chili = buildChiliSprite();
+    cache.items.potion = buildPotionSprite();
+    cache.items.heart = buildHeartSprite();
+    cache.items.atkGem = buildAtkGemSprite();
 
-    // 6. 图鉴展示帧直接复用高精像素帧（零额外耗时，保持锐利像素颗粒感）
+    // 6. 菜单与图鉴使用 160px 展示帧，放大后仍保留柔润边缘和清晰表情。
     cache.codex.nailong = [
-      cache.nailong.normal.right.idle[0],
+      buildNailongSprite('idle', 0, false, 320),
       cache.nailong.normal.right.attack[1],
       cache.nailong.normal.right.happy[0],
       cache.nailong.fire.right.run[1],
     ];
     cache.codex.baobaolong = [
-      cache.baobaolong.normal.left.patrol[0],
+      buildBaobaolongSprite('patrol', 0, false, 160),
       cache.baobaolong.normal.left.attack[1],
       cache.baobaolong.rage.left.attack[0],
       cache.baobaolong.normal.left.hurt[1],
     ];
-    cache.codex.minionTwin = cache.minion.twin.left;
-    cache.codex.minionCyclops = cache.minion.cyclops.left;
-    cache.codex.xiaoqi = [cache.xiaoqi.idle[0], cache.xiaoqi.cheer[1]];
+    cache.codex.minionTwin = [buildMinionSprite('twin', 0, false, 160), cache.minion.twin.left[1]];
+    cache.codex.minionCyclops = [buildMinionSprite('cyclops', 0, false, 160), cache.minion.cyclops.left[1]];
+    cache.codex.xiaoqi = [buildXiaoQiSprite(false, 0, 160), cache.xiaoqi.cheer[1]];
   }
 
   // ============================================================================
@@ -1389,7 +1385,8 @@ window.NailongAdventure = window.NailongAdventure || {};
     const sprite = frames[frameIdx];
 
     ctx.save();
-    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
     // 受伤无敌帧闪烁
     if (player.invincibleTimer > 0 && Math.floor(timeSec * 20) % 2 === 0) {
@@ -1447,7 +1444,8 @@ window.NailongAdventure = window.NailongAdventure || {};
     const sprite = frames[frameIdx];
 
     ctx.save();
-    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
     const cx = Math.round(enemy.x + enemy.w * 0.5);
     const bottomY = Math.round(enemy.y + enemy.h + 4);
@@ -1529,7 +1527,8 @@ window.NailongAdventure = window.NailongAdventure || {};
       : cache.minion[variant][dirKey][Math.floor(timeSec * (enemy.aggro ? 12 : 8)) % 2];
 
     ctx.save();
-    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     const cx = Math.round(enemy.x + enemy.w * 0.5);
     const bottomY = Math.round(enemy.y + enemy.h + 2);
     const drawSize = 44;
@@ -1550,7 +1549,8 @@ window.NailongAdventure = window.NailongAdventure || {};
     const frames = cheering ? cache.xiaoqi.cheer : cache.xiaoqi.idle;
     const sprite = frames[Math.floor(timeSec * 4) % frames.length];
     ctx.save();
-    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(sprite, Math.round(x - 28), Math.round(y - 56), 56, 56);
     ctx.restore();
   }
@@ -1558,7 +1558,8 @@ window.NailongAdventure = window.NailongAdventure || {};
   function drawCollectible(ctx, item, timeSec) {
     initSprites();
     ctx.save();
-    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     const bob = Math.sin(timeSec * 5 + item.x * 0.05) * 4;
     const cx = Math.round(item.x + item.w * 0.5);
     const cy = Math.round(item.y + item.h * 0.5 + bob);

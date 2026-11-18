@@ -869,511 +869,447 @@ window.NailongAdventure = window.NailongAdventure || {};
   }
 
   // ============================================================================
-  // 章节视差背景、像素地形砖块、机关与小七终点旗帜绘制器
+  // Illustrated world rendering. Static scenery and tile materials are cached;
+  // the collision geometry above stays the source of truth for every platform.
   // ============================================================================
-  function renderParallaxBackground(ctx, level, camera, viewW, viewH, timeSec) {
-    const ch = level.chapterInfo;
-    ctx.save();
-    ctx.imageSmoothingEnabled = false;
+  const WORLD_PALETTES = {
+    1: { sky: ['#B5E5E1', '#F7F3D9'], hill: ['#BEDCC3', '#91C3A2', '#6BA98B'], earth: ['#B58A61', '#856449'], turf: '#93CA79', edge: '#568A60', light: '#D5EDAB', ink: '#486D58' },
+    2: { sky: ['#F6BCA8', '#FFF1CC'], hill: ['#F5D29E', '#E7B87D', '#D99D71'], earth: ['#C48A62', '#946048'], turf: '#F7D891', edge: '#B78B53', light: '#FFF1C3', ink: '#87604C' },
+    3: { sky: ['#203D50', '#77988F'], hill: ['#466C72', '#315C61', '#244D50'], earth: ['#556B5B', '#354C45'], turf: '#70AD92', edge: '#365F58', light: '#ACD8B0', ink: '#253D44' },
+    4: { sky: ['#B5DCEB', '#F3F5EB'], hill: ['#C9E5E8', '#A3CCD6', '#83AFBF'], earth: ['#8DBAC9', '#5E91AD'], turf: '#F0F8EE', edge: '#75A5BB', light: '#FFFFFF', ink: '#517D96' },
+    5: { sky: ['#343544', '#AC7165'], hill: ['#695568', '#554455', '#463C4D'], earth: ['#6C6068', '#474352'], turf: '#A19693', edge: '#514753', light: '#C5B2A2', ink: '#413A49' },
+    6: { sky: ['#20314C', '#557A86'], hill: ['#486075', '#334F67', '#293E57'], earth: ['#4C6472', '#304555'], turf: '#83D5CE', edge: '#386878', light: '#B8F1DB', ink: '#263F55' },
+    7: { sky: ['#8482B3', '#F1DEDC'], hill: ['#D2BEDC', '#B1A6CF', '#9697BF'], earth: ['#AEA9BC', '#777E9A'], turf: '#F6DFA7', edge: '#B59A70', light: '#FFF1CC', ink: '#776B8B' },
+    8: { sky: ['#1A233D', '#695379'], hill: ['#5C567D', '#43486D', '#353E60'], earth: ['#646580', '#42465F'], turf: '#D6A5DC', edge: '#806796', light: '#F2D3E6', ink: '#393C5A' },
+  };
+  const sceneryCache = new Map();
+  const materialCache = new Map();
 
-    // 1. 天空渐变
-    const grad = ctx.createLinearGradient(0, 0, 0, viewH);
-    grad.addColorStop(0, ch.skyTop);
-    grad.addColorStop(1, ch.skyBot);
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, viewW, viewH);
+  function rounded(ctx, x, y, w, h, r, fill, stroke, lineWidth = 1.5) {
+    r = Math.max(0, Math.min(r, w * 0.5, h * 0.5));
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+    if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+    if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lineWidth; ctx.stroke(); }
+  }
 
-    const camX = camera.x;
+  function ellipse(ctx, x, y, rx, ry, fill) {
+    ctx.beginPath();
+    ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+    ctx.fillStyle = fill;
+    ctx.fill();
+  }
 
-    // 2. 远景层 (视差系数 0.18)：各章节标志性天际线与天体
-    if (level.chapter === 1) {
-      // 第一章：像素暖阳 + 蓬松白云 + 翠绿远山
-      ctx.fillStyle = '#FEF08A';
-      ctx.fillRect(viewW - 140, 48, 56, 56);
-      ctx.fillStyle = '#FDE047';
-      ctx.fillRect(viewW - 132, 56, 40, 40);
+  function makeSurface(w, h, scale = 1) {
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.ceil(w * scale);
+    canvas.height = Math.ceil(h * scale);
+    const ctx = canvas.getContext('2d');
+    ctx.scale(scale, scale);
+    return { canvas, ctx };
+  }
 
-      for (let i = 0; i < 7; i++) {
-        const cx = ((i * 220 - camX * 0.15) % (viewW + 220) + (viewW + 220)) % (viewW + 220) - 100;
-        const cy = 62 + (i % 3) * 34;
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-        ctx.fillRect(Math.round(cx), cy, 68, 22);
-        ctx.fillRect(Math.round(cx + 12), cy - 10, 44, 14);
-      }
-      for (let i = 0; i < 6; i++) {
-        const hx = ((i * 260 - camX * 0.25) % (viewW + 260) + (viewW + 260)) % (viewW + 260) - 130;
-        ctx.fillStyle = '#86EFAC';
-        ctx.beginPath();
-        ctx.arc(hx + 90, viewH - 60, 120, Math.PI, 0);
-        ctx.fill();
-      }
-    } else if (level.chapter === 2) {
-      // 第二章：糖果沙漠饼干金字塔 + 巨型螺旋棒棒糖远景
-      for (let i = 0; i < 5; i++) {
-        const px = ((i * 280 - camX * 0.22) % (viewW + 280) + (viewW + 280)) % (viewW + 280) - 120;
-        ctx.fillStyle = '#F59E0B';
-        ctx.beginPath();
-        ctx.moveTo(px, viewH - 64);
-        ctx.lineTo(px + 95, viewH - 210);
-        ctx.lineTo(px + 190, viewH - 64);
-        ctx.fill();
+  function cloud(ctx, x, y, size, color, shade) {
+    ellipse(ctx, x, y + size * 0.17, size, size * 0.28, shade || color);
+    ellipse(ctx, x - size * 0.45, y, size * 0.52, size * 0.29, color);
+    ellipse(ctx, x + size * 0.14, y - size * 0.11, size * 0.55, size * 0.39, color);
+    ellipse(ctx, x + size * 0.58, y + size * 0.06, size * 0.43, size * 0.24, color);
+  }
 
-        // 远景巨型棒棒糖
-        const lx = Math.round(px + 210);
-        ctx.fillStyle = '#FFFBEB';
-        ctx.fillRect(lx - 3, viewH - 180, 6, 116);
-        ctx.fillStyle = i % 2 === 0 ? '#EC4899' : '#38BDF8';
-        ctx.beginPath();
-        ctx.arc(lx, viewH - 190, 26, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#FFFFFF';
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.arc(lx, viewH - 190, 14, 0, Math.PI * 1.5);
-        ctx.stroke();
-      }
-    } else if (level.chapter === 3) {
-      // 第三章：幽暗森林层叠参天古树剪影 + 漂浮发光萤火虫
-      for (let i = 0; i < 8; i++) {
-        const tx = ((i * 180 - camX * 0.2) % (viewW + 180) + (viewW + 180)) % (viewW + 180) - 80;
-        ctx.fillStyle = '#1E1B4B';
-        ctx.fillRect(Math.round(tx + 28), 80, 34, viewH - 120);
-        ctx.fillStyle = '#312E81';
-        ctx.fillRect(Math.round(tx - 10), 40, 110, 90);
-      }
-      // 萤火虫微光粒子
-      for (let i = 0; i < 18; i++) {
-        const fx = ((i * 95 + Math.sin(timeSec * 2 + i) * 24 - camX * 0.35) % viewW + viewW) % viewW;
-        const fy = 110 + ((i * 53) % 280) + Math.cos(timeSec * 3 + i) * 12;
-        ctx.fillStyle = i % 2 === 0 ? '#A3E635' : '#FEF08A';
-        ctx.fillRect(Math.round(fx), Math.round(fy), 4, 4);
-      }
-    } else if (level.chapter === 4) {
-      // 第四章：极寒冰雪山巅 —— 梦幻极光丝带 + 皑皑雪峰
-      for (let band = 0; band < 3; band++) {
-        ctx.fillStyle = band === 0 ? 'rgba(52, 211, 153, 0.24)' : band === 1 ? 'rgba(56, 189, 248, 0.22)' : 'rgba(168, 85, 247, 0.18)';
-        for (let x = 0; x < viewW; x += 24) {
-          const ay = 55 + band * 28 + Math.sin(x * 0.015 + timeSec * 1.5 + band) * 18;
-          ctx.fillRect(x, Math.round(ay), 24, 22);
-        }
-      }
-      for (let i = 0; i < 6; i++) {
-        const mx = ((i * 250 - camX * 0.22) % (viewW + 250) + (viewW + 250)) % (viewW + 250) - 100;
-        ctx.fillStyle = '#7DD3FC';
-        ctx.beginPath();
-        ctx.moveTo(mx, viewH - 64);
-        ctx.lineTo(mx + 110, viewH - 250);
-        ctx.lineTo(mx + 220, viewH - 64);
-        ctx.fill();
-        // 雪顶高光
-        ctx.fillStyle = '#FFFFFF';
-        ctx.beginPath();
-        ctx.moveTo(mx + 72, viewH - 180);
-        ctx.lineTo(mx + 110, viewH - 250);
-        ctx.lineTo(mx + 148, viewH - 180);
-        ctx.fill();
-      }
-    } else if (level.chapter === 6) {
-      // 第六章：赛博霓虹机械城 —— 霓虹摩天大楼天际线与全息数据光柱
-      for (let i = 0; i < 8; i++) {
-        const bx = Math.round(((i * 190 - camX * 0.22) % (viewW + 190) + (viewW + 190)) % (viewW + 190) - 90);
-        const bh = 160 + (i % 3) * 65;
-        ctx.fillStyle = '#0F172A';
-        ctx.fillRect(bx, viewH - 60 - bh, 74, bh);
-        ctx.strokeStyle = i % 2 === 0 ? '#06B6D4' : '#EC4899';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(bx, viewH - 60 - bh, 74, bh);
-        // 赛博霓虹窗格
-        ctx.fillStyle = i % 2 === 0 ? 'rgba(34, 211, 238, 0.65)' : 'rgba(244, 114, 182, 0.65)';
-        for (let wy = viewH - 40 - bh; wy < viewH - 80; wy += 22) {
-          ctx.fillRect(bx + 12, wy, 18, 8);
-          ctx.fillRect(bx + 42, wy, 18, 8);
-        }
-      }
-    } else if (level.chapter === 7) {
-      // 第七章：云端雷霆神殿 —— 悬浮黄金神殿廊柱与紫色雷云光带
-      for (let i = 0; i < 6; i++) {
-        const px = Math.round(((i * 230 - camX * 0.2) % (viewW + 230) + (viewW + 230)) % (viewW + 230) - 90);
-        ctx.fillStyle = '#FEF3C7';
-        ctx.fillRect(px, 95, 36, viewH - 155);
-        ctx.fillStyle = '#F59E0B';
-        ctx.fillRect(px - 8, 82, 52, 16);
-        ctx.fillRect(px - 8, viewH - 74, 52, 16);
-      }
-    } else if (level.chapter === 8) {
-      // 第八章：星际虚空终焉要塞 —— 璀璨星云、虚空黑洞日冕与悬浮能量折跃环
-      const bhX = viewW - 180;
-      const bhY = 110;
-      const pulse = Math.sin(timeSec * 4) * 6;
-      ctx.fillStyle = 'rgba(236, 72, 153, 0.25)';
-      ctx.beginPath();
-      ctx.arc(bhX, bhY, 54 + pulse, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#030712';
-      ctx.beginPath();
-      ctx.arc(bhX, bhY, 34, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#F472B6';
-      ctx.lineWidth = 3;
-      ctx.stroke();
+  function tree(ctx, x, baseY, scale, color, trunk) {
+    rounded(ctx, x - 6 * scale, baseY - 75 * scale, 12 * scale, 78 * scale, 6 * scale, trunk);
+    ctx.strokeStyle = trunk;
+    ctx.lineWidth = 5 * scale;
+    ctx.beginPath();
+    ctx.moveTo(x, baseY - 42 * scale);
+    ctx.lineTo(x - 24 * scale, baseY - 68 * scale);
+    ctx.moveTo(x, baseY - 51 * scale);
+    ctx.lineTo(x + 23 * scale, baseY - 84 * scale);
+    ctx.stroke();
+    ellipse(ctx, x - 21 * scale, baseY - 81 * scale, 32 * scale, 30 * scale, color);
+    ellipse(ctx, x + 20 * scale, baseY - 95 * scale, 35 * scale, 34 * scale, color);
+    ellipse(ctx, x - 2 * scale, baseY - 111 * scale, 34 * scale, 35 * scale, color);
+    ellipse(ctx, x + 34 * scale, baseY - 74 * scale, 25 * scale, 27 * scale, color);
+    ellipse(ctx, x - 17 * scale, baseY - 117 * scale, 19 * scale, 10 * scale, 'rgba(255,255,231,.1)');
+  }
 
-      for (let i = 0; i < 24; i++) {
-        const sx = ((i * 83 - camX * 0.12) % viewW + viewW) % viewW;
-        const sy = 30 + ((i * 47) % 240);
-        ctx.fillStyle = i % 3 === 0 ? '#38BDF8' : i % 3 === 1 ? '#F472B6' : '#FEF08A';
-        ctx.fillRect(Math.round(sx), sy, 3, 3);
-      }
-    } else {
-      // 第五章：暴暴龙熔岩城堡 —— 暗黑石柱、铁链与燃烧火把
-      for (let i = 0; i < 7; i++) {
-        const px = Math.round(((i * 210 - camX * 0.25) % (viewW + 210) + (viewW + 210)) % (viewW + 210) - 80);
-        ctx.fillStyle = '#27272A';
-        ctx.fillRect(px, 60, 48, viewH - 120);
-        // 悬挂铁链
-        ctx.fillStyle = '#52525B';
-        for (let cy = 0; cy < 150; cy += 14) {
-          ctx.fillRect(px + 85, cy, 6, 10);
-        }
-        // 壁挂像素火把
-        const flicker = Math.floor(timeSec * 12 + i) % 3;
-        ctx.fillStyle = '#78350F';
-        ctx.fillRect(px + 18, 190, 10, 24);
-        ctx.fillStyle = flicker === 0 ? '#EF4444' : flicker === 1 ? '#F97316' : '#FACC15';
-        ctx.fillRect(px + 14, 174 - flicker * 2, 18, 16);
+  function makeScenery(level, viewW, viewH) {
+    const key = `${level.chapter}:${viewW}:${viewH}`;
+    if (sceneryCache.has(key)) return sceneryCache.get(key);
+    // Keep only the active chapter's large canvases in memory.
+    sceneryCache.clear();
+    const p = WORLD_PALETTES[level.chapter];
+    const width = 1440;
+    const sky = makeSurface(viewW, viewH);
+    const skyGradient = sky.ctx.createLinearGradient(0, 0, 0, viewH);
+    skyGradient.addColorStop(0, p.sky[0]);
+    skyGradient.addColorStop(1, p.sky[1]);
+    sky.ctx.fillStyle = skyGradient;
+    sky.ctx.fillRect(0, 0, viewW, viewH);
+    const lightX = viewW * 0.82;
+    const lightY = viewH * 0.2;
+    const halo = sky.ctx.createRadialGradient(lightX, lightY, 6, lightX, lightY, 170);
+    halo.addColorStop(0, level.chapter > 4 ? 'rgba(255,219,177,.17)' : 'rgba(255,250,216,.7)');
+    halo.addColorStop(1, 'rgba(255,245,216,0)');
+    sky.ctx.fillStyle = halo;
+    sky.ctx.fillRect(0, 0, viewW, viewH);
+    if ([1, 2, 4].includes(level.chapter)) {
+      ellipse(sky.ctx, lightX, lightY, 33, 33, '#FFF2B9');
+      ellipse(sky.ctx, lightX - 8, lightY - 9, 19, 15, 'rgba(255,255,235,.45)');
+      if (level.chapter === 1) {
+        sky.ctx.fillStyle = '#B3A35F';
+        ellipse(sky.ctx, lightX - 9, lightY + 1, 1.8, 2.4, '#B3A35F');
+        ellipse(sky.ctx, lightX + 9, lightY + 1, 1.8, 2.4, '#B3A35F');
+        sky.ctx.strokeStyle = '#B3A35F';
+        sky.ctx.lineWidth = 1.3;
+        sky.ctx.beginPath(); sky.ctx.arc(lightX, lightY + 2, 5, .2, Math.PI - .2); sky.ctx.stroke();
       }
     }
+    if ([3, 6, 7, 8].includes(level.chapter)) {
+      for (let i = 0; i < 42; i++) {
+        const x = (i * 151 + 41) % viewW;
+        const y = 35 + (i * 71) % Math.round(viewH * .47);
+        ellipse(sky.ctx, x, y, i % 7 === 0 ? 1.7 : .8, i % 7 === 0 ? 1.7 : .8, 'rgba(255,249,221,.6)');
+      }
+      if (level.chapter === 3 || level.chapter === 7) {
+        ellipse(sky.ctx, lightX, lightY, 28, 28, '#F8EBC8');
+        ellipse(sky.ctx, lightX + 11, lightY - 7, 26, 26, p.sky[0]);
+      }
+    }
+    const layers = [];
+    for (let depth = 0; depth < 3; depth++) {
+      const surface = makeSurface(width, viewH);
+      const ctx = surface.ctx;
+      const base = viewH - 35 + depth * 8;
+      const ridge = viewH - 150 + depth * 36;
+      ctx.fillStyle = p.hill[depth];
+      ctx.beginPath(); ctx.moveTo(0, base);
+      for (let x = 0; x <= width; x += 30) {
+        const y = ridge + Math.sin(x / width * Math.PI * 4 + depth) * (43 - depth * 10) + Math.cos(x / width * Math.PI * 8) * 16;
+        if (x === 0) ctx.lineTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.lineTo(width, viewH); ctx.lineTo(0, viewH); ctx.fill();
+      if ([1, 3].includes(level.chapter)) {
+        for (let i = 0; i < 12; i++) {
+          const x = i * 136 + (depth % 2) * 58;
+          const s = level.chapter === 3 ? 1.5 + depth * .24 + (i % 3) * .17 : .55 + depth * .12 + (i % 3) * .12;
+          const y = level.chapter === 3 ? base - 8 : ridge + 34 + Math.sin(i * 1.8) * 20;
+          for (const shift of [-width, 0, width]) tree(ctx, x + shift, y, s, p.hill[depth], depth === 2 ? '#557C68' : p.hill[Math.max(0, depth - 1)]);
+        }
+      } else if (level.chapter === 2) {
+        for (let i = 0; i < 5; i++) {
+          const x = i * 310 + 90 + depth * 50;
+          const y = base - 45;
+          if (depth === 1) {
+            rounded(ctx, x - 4, y - 120, 8, 120, 4, '#F9E8C1');
+            ellipse(ctx, x, y - 124, 30, 30, i % 2 ? '#CC929F' : '#A7C6BA');
+            ctx.strokeStyle = '#FBE7D4'; ctx.lineWidth = 6;
+            ctx.beginPath(); ctx.arc(x, y - 124, 19, .1, Math.PI * 1.8); ctx.stroke();
+          } else {
+            rounded(ctx, x - 30, y - 80 - i % 3 * 15, 60, 110, 22, p.hill[depth]);
+          }
+        }
+      } else if (level.chapter === 4) {
+        for (let i = 0; i < 7; i++) {
+          const x = i * 240 - 80 + depth * 40;
+          const peak = ridge - 120 + i % 2 * 45;
+          ctx.fillStyle = p.hill[depth];
+          ctx.beginPath();ctx.moveTo(x - 80, base);ctx.lineTo(x + 95, peak);ctx.lineTo(x + 270, base);ctx.fill();
+          ctx.fillStyle = depth === 0 ? '#ECF5EF' : '#D7EAE8';
+          ctx.beginPath();ctx.moveTo(x + 43, peak + 79);ctx.lineTo(x + 95, peak);ctx.lineTo(x + 151, peak + 84);ctx.lineTo(x + 117, peak + 68);ctx.lineTo(x + 97, peak + 89);ctx.lineTo(x + 74, peak + 64);ctx.fill();
+        }
+      } else if (level.chapter === 5) {
+        for (let i = 0; i < 8; i++) {
+          const x = i * 200 + depth * 70;
+          const y = 140 + i % 3 * 35 + depth * 55;
+          rounded(ctx, x, y, 104, base - y, 18, p.hill[depth]);
+          for (let b = 0; b < 3; b++) rounded(ctx, x + b * 37 - 2, y - 12, 31, 29, 5, p.hill[depth]);
+          rounded(ctx, x + 37, y + 38, 26, 47, 13, 'rgba(255,175,120,.12)');
+        }
+      } else if (level.chapter === 6) {
+        for (let i = 0; i < 12; i++) {
+          const x = i * 133 + depth * 49;
+          const height = 110 + i % 4 * 39 + (2 - depth) * 30;
+          rounded(ctx, x, base - height, 75, height, 9, p.hill[depth]);
+          rounded(ctx, x + 18, base - height - 16, 39, 22, 5, p.hill[depth]);
+          ctx.fillStyle = depth === 1 ? 'rgba(174,235,220,.32)' : 'rgba(210,202,219,.18)';
+          for (let y = base - height + 20; y < base - 20; y += 24) { ctx.fillRect(x + 14, y, 16, 6); ctx.fillRect(x + 44, y, 16, 6); }
+        }
+      } else if (level.chapter === 7) {
+        if (depth === 0) {
+          for (let i = 0; i < 6; i++) {
+            const x = i * 260 + 60;
+            rounded(ctx, x, 190, 31, 240, 9, '#CCBED2');
+            rounded(ctx, x - 8, 184, 47, 15, 5, '#E0CBBE');
+            rounded(ctx, x - 8, 420, 47, 18, 5, '#D5BEB1');
+            rounded(ctx, x - 20, 170, 190, 17, 8, '#D8C5D2');
+          }
+        }
+        for (let i = 0; i < 9; i++) cloud(ctx, i * 180 + 45, ridge + 35 + i % 2 * 24, 105, depth === 2 ? '#E7DDE5' : p.hill[depth], '#C6BBD5');
+      } else if (level.chapter === 8) {
+        for (let i = 0; i < 7; i++) {
+          const x = i * 230 + depth * 90;
+          const y = ridge - 45 + i % 3 * 30;
+          ctx.fillStyle = p.hill[depth];
+          ctx.beginPath();ctx.moveTo(x - 45,y);ctx.lineTo(x + 65,y - 10);ctx.lineTo(x + 48,y + 27);ctx.lineTo(x + 2,y + 58);ctx.lineTo(x - 26,y + 27);ctx.fill();
+          rounded(ctx,x-45,y-5,110,10,5,depth === 0 ? '#9C83AF' : '#76698E');
+          if (depth === 0) {ctx.strokeStyle='#8974A6';ctx.lineWidth=4;ctx.beginPath();ctx.ellipse(x+12,y-88,42,60,.35,0,Math.PI*2);ctx.stroke();}
+        }
+      }
+      layers.push(surface.canvas);
+    }
+    const result = { sky: sky.canvas, layers, width };
+    sceneryCache.set(key, result);
+    return result;
+  }
 
+  function renderParallaxBackground(ctx, level, camera, viewW, viewH, timeSec) {
+    const scene = makeScenery(level, viewW, viewH);
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(scene.sky, 0, 0);
+    if ([1, 2, 4, 7].includes(level.chapter)) {
+      for (let i = 0; i < 6; i++) {
+        const span = viewW + 240;
+        const x = ((i * 237 - camera.x * .1 + timeSec * (i % 2 ? 2 : 1)) % span + span) % span - 120;
+        cloud(ctx, x, 95 + i % 3 * 48, 47 + i % 3 * 13, 'rgba(255,255,243,.75)', 'rgba(243,250,234,.3)');
+      }
+    }
+    scene.layers.forEach((layer, i) => {
+      const offset = ((camera.x * [.12, .23, .38][i]) % scene.width + scene.width) % scene.width;
+      for (let x = -offset; x < viewW; x += scene.width) ctx.drawImage(layer, Math.round(x), 0);
+    });
+    if (level.chapter === 3 || level.chapter === 8) {
+      for (let i = 0; i < 15; i++) {
+        const x = ((i * 103 - camera.x * .3 + Math.sin(timeSec + i) * 15) % viewW + viewW) % viewW;
+        const y = 130 + i * 53 % 260 + Math.cos(timeSec * 1.3 + i) * 9;
+        ellipse(ctx, x, y, 7, 7, 'rgba(202,240,179,.05)');
+        ellipse(ctx, x, y, 1.7, 1.7, level.chapter === 3 ? '#D9F2AD' : '#EDC8F0');
+      }
+    }
+    if (level.chapter === 8) {
+      ctx.save();ctx.translate(viewW*.81,viewH*.21);ctx.rotate(-.3);
+      ellipse(ctx,0,0,40,40,'#30304E');
+      ctx.strokeStyle='rgba(223,175,218,.6)';ctx.lineWidth=5;ctx.beginPath();ctx.ellipse(0,0,66,16,0,0,Math.PI*2);ctx.stroke();
+      ctx.restore();
+    }
     ctx.restore();
+  }
+
+  function flower(ctx, x, y, color, size = 1) {
+    ctx.strokeStyle = '#6C9D6A';ctx.lineWidth=2*size;
+    ctx.beginPath();ctx.moveTo(x,y);ctx.quadraticCurveTo(x-3*size,y-10*size,x,y-24*size);ctx.stroke();
+    ellipse(ctx,x-5*size,y-9*size,5*size,2.5*size,'#8ABB78');
+    for(let i=0;i<6;i++){const a=i*Math.PI/3;ellipse(ctx,x+Math.cos(a)*6*size,y-25*size+Math.sin(a)*6*size,4*size,4*size,color);}
+    ellipse(ctx,x,y-25*size,3.8*size,3.8*size,'#B17A4F');
+    ellipse(ctx,x-1*size,y-26*size,1.1*size,1.1*size,'#F9DEA5');
+  }
+
+  function mushroom(ctx, x, y, w, h, capColor, glowing = false) {
+    if(glowing) ellipse(ctx,x+w*.5,y+h*.4,w*.9,h*1.1,'rgba(160,228,218,.1)');
+    rounded(ctx,x+w*.34,y+h*.35,w*.32,h*.65,4,'#F4E6C7','#BEA88C',1);
+    ellipse(ctx,x+w*.5,y+h*.44,w*.51,h*.13,'#BA8268');
+    ctx.beginPath();ctx.moveTo(x,y+h*.43);ctx.bezierCurveTo(x+w*.02,y-h*.15,x+w*.96,y-h*.15,x+w,y+h*.43);ctx.quadraticCurveTo(x+w*.5,y+h*.61,x,y+h*.43);ctx.fillStyle=capColor;ctx.fill();
+    ellipse(ctx,x+w*.27,y+h*.2,w*.09,h*.07,'#FFF1D8');
+    ellipse(ctx,x+w*.66,y+h*.15,w*.11,h*.08,'#FFF1D8');
+    ellipse(ctx,x+w*.8,y+h*.36,w*.055,h*.04,'#FFF1D8');
+    ellipse(ctx,x+w*.28,y+h*.08,w*.13,h*.025,'rgba(255,255,255,.3)');
+  }
+
+  function crystal(ctx,x,y,w,h,color) {
+    ctx.beginPath();ctx.moveTo(x+w*.5,y);ctx.lineTo(x+w,y+h*.28);ctx.lineTo(x+w*.8,y+h);ctx.lineTo(x+w*.18,y+h);ctx.lineTo(x,y+h*.28);ctx.closePath();ctx.fillStyle=color;ctx.fill();
+    ctx.beginPath();ctx.moveTo(x+w*.5,y+2);ctx.lineTo(x+w*.52,y+h*.89);ctx.lineTo(x+w*.18,y+h*.89);ctx.lineTo(x+w*.18,y+h*.29);ctx.closePath();ctx.fillStyle='rgba(255,255,255,.43)';ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=1;ctx.stroke();
   }
 
   function renderDecorations(ctx, level, camera, viewW, timeSec) {
-    ctx.save();
-    ctx.imageSmoothingEnabled = false;
-    for (const dec of level.decorations) {
-      const sx = Math.round(dec.x - camera.x);
-      if (sx < -60 || sx > viewW + 60) continue;
-      const sy = Math.round(dec.y);
-
-      if (dec.chapter === 1) {
-        if (dec.kind === 'A') {
-          // 像素向日葵（高度适中，不与上方空中平台重叠）
-          ctx.fillStyle = '#15803D';
-          ctx.fillRect(sx + 15, sy - 28, 4, 28);
-          ctx.fillStyle = '#FACC15';
-          ctx.fillRect(sx + 7, sy - 42, 20, 20);
-          ctx.fillStyle = '#78350F';
-          ctx.fillRect(sx + 12, sy - 37, 10, 10);
-        } else {
-          // 经典红白波点蘑菇装饰
-          ctx.fillStyle = '#FDE68A';
-          ctx.fillRect(sx + 11, sy - 16, 12, 16);
-          ctx.fillStyle = '#EF4444';
-          ctx.fillRect(sx + 4, sy - 28, 26, 14);
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(sx + 8, sy - 25, 5, 5);
-          ctx.fillRect(sx + 19, sy - 24, 5, 5);
-        }
-      } else if (dec.chapter === 2) {
-        // 棒棒糖装饰与饼干柱
-        ctx.fillStyle = '#FFFBEB';
-        ctx.fillRect(sx + 15, sy - 38, 4, 38);
-        ctx.fillStyle = dec.kind === 'A' ? '#F43F5E' : '#A855F7';
-        ctx.fillRect(sx + 6, sy - 54, 22, 22);
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(sx + 11, sy - 49, 12, 12);
-      } else if (dec.chapter === 3) {
-        // 发光荧光蘑菇
-        const glow = Math.sin(timeSec * 4 + dec.x) * 3;
-        ctx.fillStyle = 'rgba(56, 189, 248, 0.22)';
-        ctx.beginPath();
-        ctx.arc(sx + 16, sy - 18, 20 + glow, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#CBD5E1';
-        ctx.fillRect(sx + 13, sy - 16, 7, 16);
-        ctx.fillStyle = '#38BDF8';
-        ctx.fillRect(sx + 5, sy - 26, 22, 12);
-      } else if (dec.chapter === 4) {
-        // 晶莹冰晶簇
-        ctx.fillStyle = '#BAE6FD';
-        ctx.fillRect(sx + 12, sy - 30, 8, 30);
-        ctx.fillStyle = '#E0F2FE';
-        ctx.fillRect(sx + 4, sy - 20, 6, 20);
-        ctx.fillRect(sx + 22, sy - 24, 6, 24);
-      } else if (dec.chapter === 6) {
-        // 赛博霓虹能量路牌灯柱
-        ctx.fillStyle = '#334155';
-        ctx.fillRect(sx + 14, sy - 34, 6, 34);
-        ctx.fillStyle = '#06B6D4';
-        ctx.fillRect(sx + 6, sy - 44, 22, 12);
-        ctx.fillStyle = '#CFFAFE';
-        ctx.fillRect(sx + 9, sy - 41, 16, 6);
-      } else if (dec.chapter === 7) {
-        // 雷霆神殿黄金圣火柱
-        ctx.fillStyle = '#FDE68A';
-        ctx.fillRect(sx + 10, sy - 26, 14, 26);
-        ctx.fillStyle = '#A855F7';
-        ctx.fillRect(sx + 11, sy - 38 - (Math.floor(timeSec * 12) % 4), 12, 12);
-      } else if (dec.chapter === 8) {
-        // 星际虚空暗物质水晶柱
-        ctx.fillStyle = '#EC4899';
-        ctx.fillRect(sx + 11, sy - 34, 10, 34);
-        ctx.fillStyle = '#FBCFE8';
-        ctx.fillRect(sx + 14, sy - 30, 4, 22);
-      } else {
-        // 熔岩城堡骷髅火盆
-        ctx.fillStyle = '#3F3F46';
-        ctx.fillRect(sx + 6, sy - 18, 22, 18);
-        ctx.fillStyle = '#F97316';
-        ctx.fillRect(sx + 9, sy - 28 - (Math.floor(timeSec * 10) % 4), 16, 12);
-      }
+    ctx.save();ctx.imageSmoothingEnabled=true;
+    for(const dec of level.decorations){
+      const x=dec.x-camera.x; if(x < -80 || x > viewW+80) continue;
+      const y=dec.y;
+      ctx.save();ctx.translate(x+17,y);ctx.rotate(Math.sin(timeSec*1.7+dec.x*.01)*.025);
+      if(dec.chapter===1){
+        if(dec.kind==='A'){flower(ctx,0,0,'#F5D47B',1.14);flower(ctx,17,0,'#F6E9CF',.62);}
+        else {mushroom(ctx,-14,-27,28,27,'#DE8978');mushroom(ctx,10,-16,18,16,'#EBAD85');}
+        ctx.strokeStyle='#7DAA6A';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(-25,0);ctx.quadraticCurveTo(-26,-9,-30,-12);ctx.moveTo(-23,0);ctx.quadraticCurveTo(-17,-8,-18,-14);ctx.stroke();
+      }else if(dec.chapter===2){
+        rounded(ctx,-3,-45,6,45,3,'#FFF1D9','#CFB48F',1);
+        ellipse(ctx,0,-45,15,15,dec.kind==='A'?'#E69F9F':'#ACA3C9');
+        ctx.strokeStyle='#FFF0D5';ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,-45,10,.2,Math.PI*1.8);ctx.arc(0,-45,4,Math.PI*1.8,.2,true);ctx.stroke();
+        rounded(ctx,12,-13,15,13,5,'#E0B37C','#BF8C61',1);ellipse(ctx,16,-9,1.5,1.5,'#A67B59');ellipse(ctx,23,-4,1.5,1.5,'#A67B59');
+      }else if(dec.chapter===3){mushroom(ctx,-15,-30,30,30,'#84C9BF',true);mushroom(ctx,11,-18,19,18,'#A6ACD9',true);
+      }else if(dec.chapter===4){crystal(ctx,-8,-39,15,39,'#A8D7DE');crystal(ctx,-23,-24,13,24,'#C1E3E5');crystal(ctx,11,-29,13,29,'#A9C7DF');
+      }else if(dec.chapter===6){
+        rounded(ctx,-4,-38,8,38,3,'#405D6C');rounded(ctx,-17,-49,34,18,6,'#69BDBA','#355B6B',2);rounded(ctx,-12,-45,24,9,3,'#BDEADB');
+        ctx.strokeStyle='#63918E';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-8,-41);ctx.lineTo(6,-41);ctx.lineTo(1,-45);ctx.moveTo(6,-41);ctx.lineTo(1,-37);ctx.stroke();
+      }else if(dec.chapter===7){rounded(ctx,-10,-30,20,30,4,'#D5C6B0','#A79A91',1);rounded(ctx,-14,-31,28,8,3,'#F2D8A3');crystal(ctx,-6,-50,12,23,'#BAA4D7');
+      }else if(dec.chapter===8){crystal(ctx,-11,-44,21,44,'#B692CD');crystal(ctx,10,-25,13,25,'#DAA7CE');ellipse(ctx,0,-23,25,34,'rgba(210,166,220,.05)');
+      }else {rounded(ctx,-13,-20,26,20,6,'#6C646D','#494454',1.5);drawFlame(ctx,0,-23,11,20,timeSec+dec.x);}
+      ctx.restore();
     }
     ctx.restore();
   }
 
+  function getTileMaterial(t, chapter) {
+    const variant = (t.tx || 0) % 3;
+    const key=`${chapter}:${t.type}:${t.w}:${t.h}:${variant}:${!!t.bumped}:${!!t.mushroomOnly}`;
+    if(materialCache.has(key)) return materialCache.get(key);
+    const surface=makeSurface(t.w+4,t.h+6,2),ctx=surface.ctx,p=WORLD_PALETTES[chapter],w=t.w,h=t.h;
+    ctx.translate(2,2);
+    if(['normal','ice','quicksand'].includes(t.type)){
+      const isIce=t.type==='ice',isSand=t.type==='quicksand';
+      const g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,isIce?'#9DCCD9':isSand?'#E3AF6D':p.earth[0]);g.addColorStop(1,isIce?'#689BAF':isSand?'#BC8559':p.earth[1]);
+      ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+      ctx.fillStyle='rgba(56,54,47,.07)';ctx.fillRect(0,13,w,4);
+      for(let i=0;i<5;i++){
+        const x=(i*17+variant*7+6)%w,y=24+(i*23+variant*13)%Math.max(12,h-29);
+        ellipse(ctx,x,y,3.5+i%2,2.2,i%2?'rgba(255,231,188,.2)':'rgba(67,58,52,.16)');
+      }
+      ctx.fillStyle=isIce?'#ECF7F2':isSand?'#F5D790':p.turf;ctx.fillRect(0,0,w,10);
+      ctx.fillStyle=isIce?'#C7E7E8':isSand?'#DEB577':p.edge;ctx.fillRect(0,10,w,3);
+      if(!isIce&&!isSand){
+        for(let i=0;i<3;i++){const x=i*13+variant*3-2;rounded(ctx,x,6,8,11+i%2*3,4,p.turf);}
+        ctx.fillStyle=p.light;ctx.fillRect(0,0,w,2.5);
+        ctx.strokeStyle=p.light;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(7,6);ctx.lineTo(9,3);ctx.moveTo(22,5);ctx.lineTo(24,3);ctx.stroke();
+      }else if(isIce){
+        ctx.strokeStyle='rgba(242,255,252,.65)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(8,19);ctx.lineTo(20,31);ctx.moveTo(18,18);ctx.lineTo(30,30);ctx.stroke();
+        ctx.strokeStyle='rgba(230,255,249,.3)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,54);ctx.lineTo(17,43);ctx.lineTo(27,50);ctx.lineTo(36,41);ctx.stroke();
+      }
+    }else if(t.type==='question'){
+      rounded(ctx,1,3,w-2,h-3,8,t.bumped?'#9F9B86':'#CFA052',p.ink,1.5);
+      rounded(ctx,1,0,w-2,h-5,8,t.bumped?'#BEB9A0':'#F3D47D',t.bumped?'#878E78':'#AF8A51',1.5);
+      rounded(ctx,5,3,w-10,4,2,t.bumped?'#D1CEB5':'#FFF0B6');
+      if(!t.bumped){ctx.fillStyle='#926E3C';ctx.font='900 25px Trebuchet MS, sans-serif';ctx.textAlign='center';ctx.fillText('?',w*.5,h*.75);}
+      else {ellipse(ctx,8,10,2,2,'#888E79');ellipse(ctx,w-8,h-12,2,2,'#888E79');}
+    }else if(t.type==='brick'){
+      const brick=chapter===2?'#A77C68':chapter>4?'#79858B':'#D1A780';
+      rounded(ctx,1,1,w-2,h-2,5,brick,p.ink,1.3);
+      ctx.strokeStyle='rgba(70,73,61,.48)';ctx.lineWidth=1.3;ctx.beginPath();ctx.moveTo(2,h*.5);ctx.lineTo(w-2,h*.5);ctx.moveTo(w*.5,2);ctx.lineTo(w*.5,h*.5);ctx.moveTo(w*.25,h*.5);ctx.lineTo(w*.25,h-2);ctx.stroke();
+      ctx.strokeStyle='rgba(255,246,218,.45)';ctx.beginPath();ctx.moveTo(5,5);ctx.lineTo(w-6,5);ctx.moveTo(4,h*.5+4);ctx.lineTo(w*.25-3,h*.5+4);ctx.stroke();
+    }else if(t.type==='cloud_platform'){
+      const cream=t.mushroomOnly;
+      rounded(ctx,1,2,w-2,h-3,9,cream?'#F0DFA0':'#BED9D4',cream?'#B89B57':'#88B6AD',1.4);
+      rounded(ctx,1,0,w-2,h-6,8,cream?'#FFF0C1':'#FFFEF0');
+      for(let i=0;i<Math.floor(w/17);i++) ellipse(ctx,12+i*17,5,9,5,cream?'#FFF3CA':'#FFFEF1');
+      rounded(ctx,9,h-6,w-18,2,1,cream?'#D8BE75':'#96C5B9');
+    }else if(t.type==='ghost_bridge'){
+      rounded(ctx,1,1,w-3,h-2,5,'#AAA1C7','#746A96',1.3);
+      rounded(ctx,4,3,w-10,3,1.5,'#DED5EB');
+      ctx.strokeStyle='#8B82AE';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(w*.6,8);ctx.lineTo(w*.6,h-3);ctx.moveTo(6,h-6);ctx.lineTo(w*.4,h-6);ctx.stroke();
+    }else if(t.type==='steel'){
+      rounded(ctx,1,1,w-2,h-2,6,'#7F9297','#435E6A',1.5);
+      rounded(ctx,4,3,w-8,4,2,'#B9CCCA');
+      rounded(ctx,7,11,w-14,h-17,3,'#607F87');
+      for(const x of [6,w-6])for(const y of [7,h-7])ellipse(ctx,x,y,1.5,1.5,'#D9E0C9');
+    }
+    materialCache.set(key,surface.canvas);
+    return surface.canvas;
+  }
+
+  function drawFlame(ctx,x,y,w,h,timeSec){
+    const sway=Math.sin(timeSec*9)*w*.15;
+    ctx.beginPath();ctx.moveTo(x,y-h);ctx.bezierCurveTo(x+w*.15+sway,y-h*.3,x+w,y-h*.4,x+w*.5,y);ctx.bezierCurveTo(x-w*.4,y+h*.4,x-w*.8,y-h*.25,x,y-h);ctx.fillStyle='#EE9970';ctx.fill();
+    ctx.beginPath();ctx.moveTo(x,y-h*.57);ctx.bezierCurveTo(x+w*.7,y-h*.08,x+w*.15,y+h*.24,x-w*.2,y);ctx.quadraticCurveTo(x-w*.3,y-h*.3,x,y-h*.57);ctx.fillStyle='#FFE2A0';ctx.fill();
+  }
+
   function renderTilesAndHazards(ctx, level, camera, viewW, timeSec) {
-    const ch = level.chapterInfo;
-    ctx.save();
-    ctx.imageSmoothingEnabled = false;
-
-    // 1. 绘制地形与交互砖块
-    for (const t of level.tiles) {
-      if (t.broken) continue;
-      if (t.type === 'ghost_bridge' && t.state === 'gone') continue;
-
-      const sx = Math.round(t.x - camera.x);
-      if (sx + t.w < -20 || sx > viewW + 20) continue;
-      const shakeX = t.type === 'ghost_bridge' && t.state === 'shaking' ? (Math.floor(timeSec * 40) % 2 === 0 ? -2 : 2) : 0;
-      const sy = Math.round(t.y + (t.bumpOffset || 0));
-
-      if (t.type === 'normal' || t.type === 'ice' || t.type === 'quicksand') {
-        if (t.type === 'quicksand') {
-          // 第二章流沙陷阱：金黄流动波纹
-          const wave = Math.floor(timeSec * 12) % 6;
-          ctx.fillStyle = '#D97706';
-          ctx.fillRect(sx, sy, t.w, t.h);
-          ctx.fillStyle = '#FDE047';
-          ctx.fillRect(sx, sy, t.w, 10);
-          ctx.fillStyle = '#92400E';
-          ctx.fillRect(sx + wave * 4, sy + 14, 12, 4);
-          ctx.fillRect(sx + ((wave * 4 + 16) % 28), sy + 28, 12, 4);
-        } else if (t.type === 'ice') {
-          // 第四章晶莹低摩擦冰面
-          ctx.fillStyle = '#0284C7';
-          ctx.fillRect(sx, sy, t.w, t.h);
-          ctx.fillStyle = '#BAE6FD';
-          ctx.fillRect(sx, sy, t.w, 10);
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(sx + 4, sy + 2, 14, 4);
-          ctx.fillRect(sx + 8, sy + 18, 6, 18);
-        } else {
-          // 章节标准地面
-          ctx.fillStyle = ch.groundBody;
-          ctx.fillRect(sx, sy, t.w, t.h);
-          ctx.fillStyle = ch.groundTop;
-          ctx.fillRect(sx, sy, t.w, 10);
-          ctx.fillStyle = 'rgba(0,0,0,0.18)';
-          ctx.fillRect(sx + 6, sy + 18, 8, 8);
-          ctx.fillRect(sx + 22, sy + 32, 8, 8);
-        }
-      } else if (t.type === 'question') {
-        // 经典 ? 惊喜砖块（未顶开时金黄闪烁，顶开后变为暗铜铆钉砖）
-        ctx.fillStyle = t.bumped ? '#78716C' : '#F59E0B';
-        ctx.fillRect(sx, sy, t.w, t.h);
-        ctx.strokeStyle = '#292524';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(sx + 1, sy + 1, t.w - 2, t.h - 2);
-        if (!t.bumped) {
-          ctx.fillStyle = '#FEF08A';
-          ctx.fillRect(sx + 3, sy + 3, t.w - 6, 4);
-          ctx.fillStyle = '#78350F';
-          ctx.font = 'bold 20px monospace';
-          ctx.textAlign = 'center';
-          ctx.fillText('?', sx + t.w * 0.5, sy + 25);
-        } else {
-          ctx.fillStyle = '#44403C';
-          ctx.fillRect(sx + 5, sy + 5, 4, 4);
-          ctx.fillRect(sx + t.w - 9, sy + 5, 4, 4);
-        }
-      } else if (t.type === 'brick') {
-        // 可破坏像素砖块
-        ctx.fillStyle = ch.brickColor;
-        ctx.fillRect(sx, sy, t.w, t.h);
-        ctx.strokeStyle = '#1C1917';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(sx + 1, sy + 1, t.w - 2, t.h - 2);
-        ctx.fillStyle = 'rgba(255,255,255,0.2)';
-        ctx.fillRect(sx + 3, sy + 3, t.w - 6, 4);
-        ctx.fillStyle = '#1C1917';
-        ctx.fillRect(sx, sy + Math.floor(t.h * 0.5), t.w, 2);
-        ctx.fillRect(sx + Math.floor(t.w * 0.5), sy, 2, Math.floor(t.h * 0.5));
-      } else if (t.type === 'cloud_platform') {
-        // 蓬松云朵单向/高空平台（若为蘑菇专属高台，绘制醒目金黄边框）
-        ctx.fillStyle = t.mushroomOnly ? '#FEF9C3' : '#FFFFFF';
-        ctx.fillRect(sx + 2, sy, t.w - 4, t.h);
-        ctx.fillStyle = t.mushroomOnly ? '#FDE047' : '#E0F2FE';
-        ctx.fillRect(sx + 4, sy + t.h - 6, t.w - 8, 6);
-        ctx.strokeStyle = t.mushroomOnly ? '#F59E0B' : '#38BDF8';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(sx + 2, sy, t.w - 4, t.h);
-      } else if (t.type === 'ghost_bridge') {
-        // 第三章会消失的幽灵木桥
-        ctx.fillStyle = t.state === 'shaking' ? 'rgba(216, 180, 254, 0.7)' : 'rgba(139, 92, 246, 0.9)';
-        ctx.fillRect(sx + shakeX, sy, t.w - 2, t.h);
-        ctx.fillStyle = '#F3E8FF';
-        ctx.fillRect(sx + shakeX + 4, sy + 3, t.w - 10, 4);
-      } else if (t.type === 'steel') {
-        ctx.fillStyle = '#52525B';
-        ctx.fillRect(sx, sy, t.w, t.h);
-        ctx.strokeStyle = '#18181B';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(sx + 1, sy + 1, t.w - 2, t.h - 2);
+    ctx.save();ctx.imageSmoothingEnabled=true;
+    for(const t of level.tiles){
+      if(t.broken||(t.type==='ghost_bridge'&&t.state==='gone'))continue;
+      let x=Math.round(t.x-camera.x);if(x+t.w < -20 || x > viewW+20)continue;
+      const y=Math.round(t.y+(t.bumpOffset||0));
+      if(t.type==='ghost_bridge'&&t.state==='shaking')x+=Math.sin(timeSec*48)*2;
+      ctx.globalAlpha=t.type==='ghost_bridge'?(t.state==='shaking'?.58+Math.sin(timeSec*28)*.2:.88):1;
+      const material=getTileMaterial(t,level.chapter);
+      ctx.drawImage(material,x-2,y-2,t.w+4,t.h+6);
+      ctx.globalAlpha=1;
+      if(t.type==='quicksand'){
+        ctx.strokeStyle='rgba(160,109,68,.55)';ctx.lineWidth=1.2;
+        for(let i=0;i<2;i++){const offset=(timeSec*12+i*15)%29;ctx.beginPath();ctx.ellipse(x+offset+2,y+5+i*4,6,1.8,0,0,Math.PI);ctx.stroke();}
       }
     }
-
-    // 2. 绘制移动云朵与升降平台
-    for (const mp of level.movingPlatforms) {
-      const sx = Math.round(mp.x - camera.x);
-      if (sx + mp.w < -20 || sx > viewW + 20) continue;
-      const sy = Math.round(mp.y);
-      if (mp.theme === 'lava') {
-        ctx.fillStyle = '#475569';
-        ctx.fillRect(sx, sy, mp.w, mp.h);
-        ctx.fillStyle = '#F59E0B';
-        ctx.fillRect(sx + 4, sy + 3, mp.w - 8, 4);
-        ctx.strokeStyle = '#0F172A';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(sx, sy, mp.w, mp.h);
-      } else {
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(sx, sy, mp.w, mp.h);
-        ctx.fillStyle = '#BAE6FD';
-        ctx.fillRect(sx + 4, sy + mp.h - 5, mp.w - 8, 5);
-        ctx.strokeStyle = '#0284C7';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(sx, sy, mp.w, mp.h);
+    for(const mp of level.movingPlatforms){
+      const x=Math.round(mp.x-camera.x),y=Math.round(mp.y);if(x+mp.w < -30 || x > viewW+30)continue;
+      if(mp.theme==='lava'){
+        ellipse(ctx,x+mp.w*.5,y+mp.h+4,mp.w*.35,4,'rgba(35,42,48,.12)');
+        rounded(ctx,x,y,mp.w,mp.h,7,'#6F8790','#3D606C',1.8);
+        rounded(ctx,x+4,y+2,mp.w-8,5,2.5,'#CBD5B5');
+        for(let i=0;i<3;i++)rounded(ctx,x+12+i*21,y+mp.h-6,13,3,1.5,'#E5B37B');
+        rounded(ctx,x+mp.w*.27,y+mp.h,mp.w*.46,5,2,'#557580');
+      }else{
+        rounded(ctx,x,y,mp.w,mp.h,9,'#C2DBD2','#88B2A8',1.4);rounded(ctx,x,y,mp.w,mp.h-5,8,'#FFFDF0');
+        for(let i=0;i<mp.w/24;i++)ellipse(ctx,x+12+i*23,y+4,13,7,'#FFFDF0');
+        rounded(ctx,x+12,y+mp.h-6,mp.w-24,2,1,'#A6CDC0');
       }
     }
-
-    // 3. 绘制章节机关与陷阱 (弹簧蘑菇、弹跳布丁、仙人掌、埋伏树丛、冰锥、岩浆池、旋转火棒)
-    for (const hz of level.hazards) {
-      const sx = Math.round(hz.x - camera.x);
-      if (sx < -120 || sx > viewW + 120) continue;
-      const sy = Math.round(hz.y);
-
-      if (hz.type === 'spring') {
-        // 经典红白弹簧蘑菇垫
-        const compress = hz.bounceAnim > 0 ? 6 : 0;
-        ctx.fillStyle = '#E2E8F0';
-        ctx.fillRect(sx + 10, sy + 10 + compress, 12, 12 - compress);
-        ctx.fillStyle = '#EF4444';
-        ctx.fillRect(sx, sy + compress, hz.w, 11);
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(sx + 5, sy + 2 + compress, 6, 6);
-        ctx.fillRect(sx + 21, sy + 2 + compress, 6, 6);
-      } else if (hz.type === 'pudding') {
-        // 第二章高弹力焦糖布丁垫
-        const compress = hz.bounceAnim > 0 ? 5 : 0;
-        ctx.fillStyle = '#FDE047';
-        ctx.fillRect(sx + 2, sy + 6 + compress, hz.w - 4, hz.h - 6 - compress);
-        ctx.fillStyle = '#78350F';
-        ctx.fillRect(sx, sy + compress, hz.w, 8);
-      } else if (hz.type === 'cactus') {
-        // 沙漠仙人掌尖刺
-        ctx.fillStyle = '#15803D';
-        ctx.fillRect(sx + 8, sy, 12, hz.h);
-        ctx.fillRect(sx, sy + 8, 28, 7);
-        ctx.fillStyle = '#FEF08A';
-        ctx.fillRect(sx + 12, sy - 3, 4, 4);
-        ctx.fillRect(sx + 2, sy + 5, 3, 3);
-        ctx.fillRect(sx + 23, sy + 5, 3, 3);
-      } else if (hz.type === 'ambush_bush') {
-        // 第三章突袭树丛（未触发前微微晃动）
-        const rustle = !hz.triggered ? Math.sin(timeSec * 16 + hz.x) * 2 : 0;
-        ctx.fillStyle = '#065F46';
-        ctx.fillRect(sx + rustle, sy + 8, hz.w, hz.h - 8);
-        ctx.fillStyle = '#10B981';
-        ctx.fillRect(sx + 6 + rustle, sy, hz.w - 12, 14);
-        if (!hz.triggered) {
-          // 露出小紫兵发光的黄绿小眼睛提示玩家
-          ctx.fillStyle = '#EAEA62';
-          ctx.fillRect(sx + 16 + rustle, sy + 14, 5, 5);
-          ctx.fillRect(sx + 27 + rustle, sy + 14, 5, 5);
-        }
-      } else if (hz.type === 'icicle') {
-        // 第四章坠落冰锥陷阱
-        const shake = hz.state === 'shaking' ? (Math.floor(timeSec * 45) % 2 === 0 ? -2 : 2) : 0;
-        ctx.fillStyle = '#38BDF8';
-        ctx.beginPath();
-        ctx.moveTo(sx + shake, sy);
-        ctx.lineTo(sx + hz.w + shake, sy);
-        ctx.lineTo(sx + hz.w * 0.5 + shake, sy + hz.h);
-        ctx.fill();
-        ctx.fillStyle = '#E0F2FE';
-        ctx.fillRect(sx + 6 + shake, sy + 2, 5, 16);
-      } else if (hz.type === 'desert_river') {
-        // 第二章沙漠焦糖蜜河（不扣血，带波光粼粼的急流击退特效）
-        ctx.fillStyle = '#0EA5E9';
-        ctx.fillRect(sx, sy, hz.w, hz.h);
-        ctx.fillStyle = '#7DD3FC';
-        for (let lx = 0; lx < hz.w; lx += 18) {
-          const waveY = Math.sin(timeSec * 9 + lx * 0.12) * 3;
-          ctx.fillRect(sx + lx, Math.round(sy + 2 + waveY), 12, 6);
-        }
-        ctx.fillStyle = '#E0F2FE';
-        for (let lx = 6; lx < hz.w - 10; lx += 28) {
-          const flowX = ((lx - Math.floor(timeSec * 60)) % (hz.w - 12) + (hz.w - 12)) % (hz.w - 12);
-          ctx.fillRect(sx + flowX, sy + 14, 10, 3);
-        }
-      } else if (hz.type === 'lava') {
-        // 第五章翻滚像素岩浆池
-        ctx.fillStyle = '#DC2626';
-        ctx.fillRect(sx, sy, hz.w, hz.h);
-        ctx.fillStyle = '#FACC15';
-        for (let lx = 0; lx < hz.w; lx += 18) {
-          const waveY = Math.sin(timeSec * 8 + lx * 0.1) * 4;
-          ctx.fillRect(sx + lx, Math.round(sy + waveY), 12, 8);
-        }
-      } else if (hz.type === 'firebar') {
-        // 第五章旋转火棒机关
-        for (let r = 0; r <= hz.length; r += 16) {
-          const fx = Math.round(sx + Math.cos(hz.angle) * r);
-          const fy = Math.round(sy + Math.sin(hz.angle) * r);
-          ctx.fillStyle = '#FF5722';
-          ctx.fillRect(fx - 7, fy - 7, 14, 14);
-          ctx.fillStyle = '#FFEB3B';
-          ctx.fillRect(fx - 4, fy - 4, 8, 8);
-        }
+    for(const hz of level.hazards){
+      const x=Math.round(hz.x-camera.x),y=Math.round(hz.y);
+      const reach=hz.type==='firebar'?hz.length+20:(hz.w||0);
+      if(x+reach < -40 || x-reach > viewW+40)continue;
+      if(hz.type==='spring'){
+        const compress=hz.bounceAnim>0?6:0;
+        ellipse(ctx,x+hz.w*.5,y+hz.h+1,hz.w*.48,3,'rgba(50,73,52,.13)');
+        rounded(ctx,x+8,y+hz.h-4,hz.w-16,4,2,'#A99978');
+        ctx.strokeStyle='#9C987D';ctx.lineWidth=2;ctx.beginPath();
+        ctx.moveTo(x+11,y+hz.h-4);for(let i=0;i<3;i++)ctx.lineTo(x+(i%2?11:21),y+hz.h-7-i*(3-compress*.3));ctx.stroke();
+        mushroom(ctx,x,y+compress,hz.w,hz.h-compress-1,'#DC8774');
+      }else if(hz.type==='pudding'){
+        const c=hz.bounceAnim>0?5:0;
+        ellipse(ctx,x+hz.w*.5,y+hz.h,hz.w*.54,3,'#C6A075');
+        rounded(ctx,x+2,y+4+c,hz.w-4,hz.h-5-c,8,'#F4D58C','#B99562',1.2);
+        ellipse(ctx,x+hz.w*.5,y+6+c,hz.w*.48,5,'#BD8761');
+        ellipse(ctx,x+hz.w*.43,y+4+c,hz.w*.28,2,'#D9A177');
+        rounded(ctx,x+6,y+11+c,4,5,2,'#FFEAB3');
+      }else if(hz.type==='cactus'){
+        rounded(ctx,x+8,y+1,12,hz.h-1,6,'#7FA779','#4F7A59',1.5);
+        ctx.strokeStyle='#669361';ctx.lineWidth=8;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x+10,y+18);ctx.lineTo(x+3,y+18);ctx.lineTo(x+3,y+9);ctx.moveTo(x+18,y+23);ctx.lineTo(x+25,y+23);ctx.lineTo(x+25,y+13);ctx.stroke();
+        ctx.strokeStyle='#B5D296';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(x+13,y+7);ctx.lineTo(x+13,y+hz.h-6);ctx.stroke();
+        for(let i=0;i<5;i++){const yy=y+6+i*5;ctx.strokeStyle='#EAE3B9';ctx.beginPath();ctx.moveTo(x+8,yy);ctx.lineTo(x+5,yy-2);ctx.moveTo(x+19,yy+2);ctx.lineTo(x+22,yy);ctx.stroke();}
+        flower(ctx,x+14,y+9,'#EDBCBD',.4);
+      }else if(hz.type==='ambush_bush'){
+        const rustle=hz.triggered?0:Math.sin(timeSec*13+hz.x)*1.2;
+        ellipse(ctx,x+hz.w*.5+rustle,y+hz.h-8,hz.w*.53,12,'#3C765F');
+        ellipse(ctx,x+12+rustle,y+18,14,13,'#578E6A');ellipse(ctx,x+29+rustle,y+12,17,14,'#629D76');ellipse(ctx,x+42+rustle,y+23,12,10,'#4A855F');
+        ellipse(ctx,x+25+rustle,y+4,9,2.5,'rgba(188,220,147,.22)');
+        if(!hz.triggered){ellipse(ctx,x+19+rustle,y+21,3,3,'#F1DF99');ellipse(ctx,x+30+rustle,y+21,3,3,'#F1DF99');ellipse(ctx,x+20+rustle,y+21,1.3,2,'#394F48');ellipse(ctx,x+31+rustle,y+21,1.3,2,'#394F48');}
+      }else if(hz.type==='icicle'){
+        const shake=hz.state==='shaking'?Math.sin(timeSec*50)*2:0;
+        ctx.beginPath();ctx.moveTo(x+shake,y);ctx.lineTo(x+hz.w+shake,y);ctx.lineTo(x+hz.w*.5+shake,y+hz.h);ctx.closePath();ctx.fillStyle='#A4D3DE';ctx.fill();ctx.strokeStyle='#6CA8BC';ctx.lineWidth=1.3;ctx.stroke();
+        ctx.beginPath();ctx.moveTo(x+4+shake,y+2);ctx.lineTo(x+hz.w*.5+shake,y+hz.h-7);ctx.lineTo(x+hz.w*.48+shake,y+2);ctx.fillStyle='#ECF8F0';ctx.fill();
+      }else if(hz.type==='desert_river'||hz.type==='lava'){
+        const lava=hz.type==='lava';
+        const g=ctx.createLinearGradient(0,y,0,y+hz.h);g.addColorStop(0,lava?'#F6BC75':'#88CEC8');g.addColorStop(1,lava?'#C96B60':'#4D9FA9');
+        ctx.beginPath();ctx.moveTo(x,y+5);
+        for(let dx=0;dx<=hz.w;dx+=6)ctx.lineTo(x+dx,y+4+Math.sin(dx*.065+timeSec*3.5)*3);
+        ctx.lineTo(x+hz.w,y+hz.h);ctx.lineTo(x,y+hz.h);ctx.closePath();ctx.fillStyle=g;ctx.fill();
+        ctx.strokeStyle=lava?'#FFE1A1':'#DBF1DE';ctx.lineWidth=2;ctx.beginPath();
+        for(let dx=0;dx<=hz.w;dx+=6){const yy=y+4+Math.sin(dx*.065+timeSec*3.5)*3;if(dx===0)ctx.moveTo(x+dx,yy);else ctx.lineTo(x+dx,yy);}ctx.stroke();
+        for(let i=0;i<hz.w/28;i++){const xx=x+(i*37+timeSec*(lava?9:-28)+hz.w*10)%hz.w,yy=y+20+i%3*13;ellipse(ctx,xx,yy,lava?3:7,lava?2:1,lava?'rgba(255,219,157,.5)':'rgba(225,250,230,.55)');}
+      }else if(hz.type==='firebar'){
+        const endX=x+Math.cos(hz.angle)*hz.length,endY=y+Math.sin(hz.angle)*hz.length;
+        ctx.strokeStyle='#7F7977';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(endX,endY);ctx.stroke();
+        for(let r=16;r<=hz.length;r+=16){const fx=x+Math.cos(hz.angle)*r,fy=y+Math.sin(hz.angle)*r;ellipse(ctx,fx,fy,11,11,'rgba(244,176,112,.12)');const glow=ctx.createRadialGradient(fx-2,fy-2,1,fx,fy,8);glow.addColorStop(0,'#FFF0B5');glow.addColorStop(.46,'#F8CA80');glow.addColorStop(1,level.chapter>=6?'#D29AC6':'#DE8D70');ellipse(ctx,fx,fy,7.3,7.3,glow);ellipse(ctx,fx-2,fy-3,2,1.5,'#FFF5D2');}
+        ellipse(ctx,x,y,11,11,'#52747B');ellipse(ctx,x,y,7.5,7.5,'#ABC3B9');ellipse(ctx,x-1,y-1,3,3,'#EBE9C3');
       }
     }
-
-    // 4. 绘制终点鸡腿旗杆与伙伴小七！
-    const gx = Math.round(level.goalX - camera.x);
-    if (gx > -100 && gx < viewW + 100) {
-      const gy = level.groundY;
-      // 底座与旗杆
-      ctx.fillStyle = '#F59E0B';
-      ctx.fillRect(gx - 16, gy - 16, 32, 16);
-      ctx.fillStyle = '#FEF08A';
-      ctx.fillRect(gx - 3, gy - 210, 6, 194);
-      // 顶部黄金圆球与奶龙大鸡腿胜利旗帜
-      ctx.fillStyle = '#FFD700';
-      ctx.beginPath();
-      ctx.arc(gx, gy - 216, 10, 0, Math.PI * 2);
-      ctx.fill();
-
-      const wave = Math.sin(timeSec * 6) * 3;
-      ctx.fillStyle = '#EF4444';
-      ctx.fillRect(gx + 3, gy - 204 + wave * 0.5, 54, 34);
-      ctx.fillStyle = '#FEF08A';
-      ctx.font = 'bold 13px monospace';
-      ctx.fillText('🍗GOAL', gx + 8, gy - 183 + wave * 0.5);
-
-      // 小七在终点旗杆旁挥手迎接奶龙！
-      if (ns.Sprites && ns.Sprites.drawXiaoQi) {
-        ns.Sprites.drawXiaoQi(ctx, gx + 48, gy + 4, true, timeSec);
-      }
+    const gx=Math.round(level.goalX-camera.x),gy=level.groundY;
+    if(gx > -120 && gx < viewW+120){
+      ellipse(ctx,gx+18,gy+1,47,5,'rgba(65,83,58,.14)');
+      rounded(ctx,gx-18,gy-13,36,13,5,'#B3A384','#867D67',1.4);rounded(ctx,gx-13,gy-17,26,7,3,'#F0DCAB');
+      rounded(ctx,gx-3,gy-199,6,184,3,'#E5CA95','#B49C76',1);
+      ellipse(ctx,gx,gy-204,8,8,'#E4BB6E');ellipse(ctx,gx-2,gy-207,3,3,'#FFF1BE');
+      const wave=Math.sin(timeSec*3)*3;
+      ctx.beginPath();ctx.moveTo(gx+3,gy-193);ctx.bezierCurveTo(gx+25,gy-199+wave,gx+40,gy-184-wave,gx+66,gy-191);ctx.lineTo(gx+57,gy-170);ctx.lineTo(gx+65,gy-151);ctx.bezierCurveTo(gx+43,gy-145-wave,gx+24,gy-161+wave,gx+3,gy-154);ctx.closePath();ctx.fillStyle='#74AF96';ctx.fill();ctx.strokeStyle='#4D8B78';ctx.lineWidth=1.5;ctx.stroke();
+      ctx.save();ctx.translate(gx+30,gy-173+wave*.3);ctx.rotate(-.35);rounded(ctx,-1,0,16,6,3,'#FFF2D7');ellipse(ctx,14,0,3,3,'#FFF2D7');ellipse(ctx,15,6,3,3,'#FFF2D7');ellipse(ctx,-4,2,11,9,'#F1C878');ellipse(ctx,-6,0,6,5,'#FFDE96');ctx.restore();
+      rounded(ctx,gx-27,gy-60,55,25,8,'#FFF1CE','#B6A680',1.5);ctx.fillStyle='#6F8D6D';ctx.font='900 14px Trebuchet MS, sans-serif';ctx.textAlign='center';ctx.fillText('GOAL',gx,gy-43);
+      flower(ctx,gx-30,gy,'#F2D887',.65);flower(ctx,gx+35,gy,'#E8B2A4',.5);
+      if(ns.Sprites&&ns.Sprites.drawXiaoQi)ns.Sprites.drawXiaoQi(ctx,gx+48,gy+4,true,timeSec);
     }
-
     ctx.restore();
   }
 

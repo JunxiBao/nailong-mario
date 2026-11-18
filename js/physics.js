@@ -20,6 +20,33 @@ window.NailongAdventure = window.NailongAdventure || {};
   const JUMP_VELOCITY = -565;
   const COYOTE_DURATION = 0.11;
   const JUMP_BUFFER_DURATION = 0.12;
+  const MAX_VISUAL_PARTICLES = 280;
+  const TAU = Math.PI * 2;
+
+  function circlePath(ctx, x, y, radius) {
+    ctx.beginPath();
+    ctx.arc(x, y, Math.max(0.1, radius), 0, TAU);
+  }
+
+  function polygonPath(ctx, points) {
+    ctx.beginPath();
+    ctx.moveTo(points[0][0], points[0][1]);
+    for (let i = 1; i < points.length; i++) ctx.lineTo(points[i][0], points[i][1]);
+    ctx.closePath();
+  }
+
+  function sparklePath(ctx, radius, inner = 0.24) {
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const angle = (i * Math.PI) / 4;
+      const size = i % 2 === 0 ? radius : radius * inner;
+      const x = Math.cos(angle) * size;
+      const y = Math.sin(angle) * size;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+  }
 
   function aabbOverlap(a, b) {
     return (
@@ -36,6 +63,7 @@ window.NailongAdventure = window.NailongAdventure || {};
       this.enemyProjectiles = [];
       this.particles = [];
       this.floatingTexts = [];
+      this.impacts = [];
     }
 
     reset() {
@@ -43,6 +71,7 @@ window.NailongAdventure = window.NailongAdventure || {};
       this.enemyProjectiles = [];
       this.particles = [];
       this.floatingTexts = [];
+      this.impacts = [];
     }
 
     spawnFloatingText(x, y, text, color = '#FFEB3B', size = 15) {
@@ -62,16 +91,69 @@ window.NailongAdventure = window.NailongAdventure || {};
       for (let i = 0; i < count; i++) {
         const ang = (Math.PI * 2 * i) / count + Math.random() * 0.4;
         const spd = speed * (0.5 + Math.random() * 0.7);
-        this.particles.push({
+        const life = 0.38 + Math.random() * 0.3;
+        this._addParticle({
           x,
           y,
           vx: Math.cos(ang) * spd,
           vy: Math.sin(ang) * spd - 60,
-          size: 4 + Math.floor(Math.random() * 4),
+          size: 2 + Math.random() * 2.6,
           color,
-          life: 0.45 + Math.random() * 0.25,
+          life,
+          maxLife: life,
+          shape: i % 4 === 0 ? 'star' : i % 3 === 0 ? 'shard' : 'spark',
+          rotation: ang,
+          spin: (Math.random() - 0.5) * 12,
+          gravity: 360,
         });
       }
+    }
+
+    _addParticle(particle) {
+      // A fixed visual budget keeps long boss fights steady on mobile devices.
+      if (this.particles.length >= MAX_VISUAL_PARTICLES) this.particles.shift();
+      this.particles.push(particle);
+    }
+
+    spawnImpact(x, y, color = '#FFAA32', size = 24, smoke = false) {
+      if (this.impacts.length >= 24) this.impacts.shift();
+      this.impacts.push({ x, y, color, size, life: 0.36, maxLife: 0.36 });
+      if (!smoke) return;
+      for (let i = 0; i < 5; i++) {
+        const angle = (i / 5) * TAU;
+        const life = 0.38 + Math.random() * 0.16;
+        this._addParticle({
+          x: x + Math.cos(angle) * 5,
+          y: y + Math.sin(angle) * 4,
+          vx: Math.cos(angle) * 38,
+          vy: -30 + Math.sin(angle) * 24,
+          size: 5 + Math.random() * 4,
+          color: '#8E7DA6',
+          life,
+          maxLife: life,
+          shape: 'smoke',
+          gravity: -25,
+        });
+      }
+    }
+
+    _emitProjectileTrail(projectile, dt, color, isFire = false) {
+      projectile.trailTimer = (projectile.trailTimer || 0) - dt;
+      if (projectile.trailTimer > 0) return;
+      projectile.trailTimer = isFire ? 0.035 : 0.055;
+      const life = isFire ? 0.22 : 0.28;
+      this._addParticle({
+        x: projectile.x + projectile.w * 0.5,
+        y: projectile.y + projectile.h * 0.5,
+        vx: -projectile.vx * 0.07,
+        vy: -18 + Math.random() * 16,
+        size: isFire ? 3.6 : 2.8,
+        color,
+        life,
+        maxLife: life,
+        gravity: -35,
+        shape: 'ember',
+      });
     }
 
     createPlayer(startX = 96, startY = 360) {
@@ -128,6 +210,8 @@ window.NailongAdventure = window.NailongAdventure || {};
         dmg: player.atkBoostTimer > 0 ? 2 : 1,
         life: 1.35 * rangeMult,
       });
+      this.spawnImpact(player.facing >= 0 ? player.x + player.w + 8 : player.x - 8,
+        player.y + player.h * 0.36 + 7, '#FFD66B', 14);
       if (ns.Audio) ns.Audio.playFireball();
       return true;
     }
@@ -142,6 +226,7 @@ window.NailongAdventure = window.NailongAdventure || {};
         player.hurtTimer = 0.4;
         this.spawnFloatingText(player.x, player.y - 12, '辣椒护体抵消伤害!', '#FF9800', 14);
         this.spawnBurstParticles(player.x + 17, player.y + 22, '#FF5722', 12);
+        this.spawnImpact(player.x + 17, player.y + 22, '#FFB452', 34);
         return;
       }
 
@@ -151,6 +236,7 @@ window.NailongAdventure = window.NailongAdventure || {};
         player.hurtTimer = 0.4;
         this.spawnFloatingText(player.x, player.y - 12, '奶茶护盾抵挡伤害!', '#4ADE80', 14);
         this.spawnBurstParticles(player.x + 17, player.y + 22, '#52E09B', 12);
+        this.spawnImpact(player.x + 17, player.y + 22, '#9CF8CB', 34);
         return;
       }
 
@@ -160,6 +246,7 @@ window.NailongAdventure = window.NailongAdventure || {};
       player.vy = -260;
       player.vx = -player.facing * 140;
       this.spawnBurstParticles(player.x + 17, player.y + 22, '#EF4444', 14);
+      this.spawnImpact(player.x + 17, player.y + 22, '#FF9294', 28);
       if (reason) {
         this.spawnFloatingText(player.x, player.y - 16, reason, '#FCA5A5', 13);
       }
@@ -595,13 +682,14 @@ window.NailongAdventure = window.NailongAdventure || {};
         }
       }
 
-      // 9. 更新奶龙喷出的像素火球
+      // 9. 更新奶龙喷出的火球（视觉拖尾与碰撞体独立）
       for (let i = this.fireballs.length - 1; i >= 0; i--) {
         const fb = this.fireballs[i];
         fb.life -= dt;
         fb.vy += 980 * dt;
         fb.x += fb.vx * dt;
         fb.y += fb.vy * dt;
+        this._emitProjectileTrail(fb, dt, fb.dmg > 1 ? '#FFE8A3' : '#FFB34D', true);
 
         // 地面弹跳
         for (const t of level.tiles) {
@@ -611,6 +699,7 @@ window.NailongAdventure = window.NailongAdventure || {};
               fb.y = t.y - fb.h;
               fb.vy = -250;
               fb.bounces++;
+              this.spawnImpact(fb.x + fb.w * 0.5, fb.y + fb.h, '#FFC66B', 12);
             } else {
               fb.life = 0;
             }
@@ -628,7 +717,8 @@ window.NailongAdventure = window.NailongAdventure || {};
         }
 
         if (fb.life <= 0 || fb.bounces > 4) {
-          this.spawnBurstParticles(fb.x + 7, fb.y + 7, '#FF5722', 5, 90);
+          this.spawnBurstParticles(fb.x + fb.w * 0.5, fb.y + fb.h * 0.5, '#FF9A36', 7, 105);
+          this.spawnImpact(fb.x + fb.w * 0.5, fb.y + fb.h * 0.5, '#FFBC59', 22);
           this.fireballs.splice(i, 1);
         }
       }
@@ -826,19 +916,21 @@ window.NailongAdventure = window.NailongAdventure || {};
             proj.bounces = (proj.bounces || 0) + 1;
             if (proj.bounces >= 2) {
               proj.life = 0;
-              this.spawnBurstParticles(proj.x + 7, proj.y + 7, '#A855F7', 6, 100);
+            } else {
+              this.spawnImpact(proj.x + proj.w * 0.5, proj.y + proj.h, '#CC91F4', 12);
             }
           }
         }
         proj.x += proj.vx * dt;
         proj.y += proj.vy * dt;
+        this._emitProjectileTrail(proj, dt, proj.kind === 'bolt' ? '#F9A8D4' : '#CB8AFF');
 
         // 奶龙喷出的火球可以在空中击毁敌人的炸弹/能量球！
         for (const fb of this.fireballs) {
           if (aabbOverlap(fb, proj)) {
             fb.life = 0;
             proj.life = 0;
-            this.spawnBurstParticles(proj.x + 7, proj.y + 7, '#FF9800', 8, 120);
+            this.spawnBurstParticles(proj.x + proj.w * 0.5, proj.y + proj.h * 0.5, '#FFD083', 7, 120);
             break;
           }
         }
@@ -854,6 +946,11 @@ window.NailongAdventure = window.NailongAdventure || {};
           this.damagePlayer(player, msg);
         }
         if (proj.life <= 0) {
+          const impactColor = proj.kind === 'bolt' ? '#F79ACD' : '#C292FF';
+          this.spawnBurstParticles(proj.x + proj.w * 0.5, proj.y + proj.h * 0.5,
+            impactColor, proj.kind === 'bomb' ? 12 : 7, proj.kind === 'bomb' ? 165 : 115);
+          this.spawnImpact(proj.x + proj.w * 0.5, proj.y + proj.h * 0.5,
+            impactColor, proj.kind === 'bomb' ? 36 : 24, proj.kind === 'bomb');
           this.enemyProjectiles.splice(i, 1);
         }
       }
@@ -862,10 +959,16 @@ window.NailongAdventure = window.NailongAdventure || {};
       for (let i = this.particles.length - 1; i >= 0; i--) {
         const pt = this.particles[i];
         pt.life -= dt;
-        pt.vy += 420 * dt;
+        pt.vy += (pt.gravity === undefined ? 420 : pt.gravity) * dt;
         pt.x += pt.vx * dt;
         pt.y += pt.vy * dt;
+        pt.rotation = (pt.rotation || 0) + (pt.spin || 0) * dt;
         if (pt.life <= 0) this.particles.splice(i, 1);
+      }
+
+      for (let i = this.impacts.length - 1; i >= 0; i--) {
+        this.impacts[i].life -= dt;
+        if (this.impacts[i].life <= 0) this.impacts.splice(i, 1);
       }
 
       for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
@@ -933,6 +1036,8 @@ window.NailongAdventure = window.NailongAdventure || {};
     _damageEnemy(en, dmg, player, stateCallbacks, byFireball = false, comboMult = 1) {
       en.hp -= dmg;
       en.hurtTimer = 0.45;
+      this.spawnImpact(en.x + en.w * 0.5, byFireball ? en.y + en.h * 0.45 : en.y + 5,
+        byFireball ? '#FFD178' : '#B6F0FF', en.type.includes('boss') ? 38 : 25);
       if (ns.Audio) ns.Audio.playStomp(player.airCombo || 1);
 
       if (en.hp <= 0) {
@@ -965,77 +1070,327 @@ window.NailongAdventure = window.NailongAdventure || {};
       }
     }
 
-    /**
-     * 绘制火球、小紫兵炸弹/尖刺弹、暴暴龙紫色能量球、受击粒子与连击浮动文字
-     */
+    _drawGlow(ctx, radius, color) {
+      const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, radius);
+      glow.addColorStop(0, color);
+      glow.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = glow;
+      circlePath(ctx, 0, 0, radius);
+      ctx.fill();
+    }
+
+    _drawFireball(ctx, fb, timeSec) {
+      const radius = fb.w * 0.54;
+      const flicker = Math.sin(timeSec * 30 + fb.x * 0.05);
+      ctx.rotate(Math.atan2(fb.vy * 0.45, fb.vx));
+      this._drawGlow(ctx, radius * 3.2, 'rgba(255,153,48,0.28)');
+
+      // Curved flame tongues follow the velocity without enlarging the hit box.
+      const flame = ctx.createLinearGradient(-radius * 3, 0, radius, 0);
+      flame.addColorStop(0, 'rgba(255,91,38,0)');
+      flame.addColorStop(0.48, '#FF7C24');
+      flame.addColorStop(1, '#FFE797');
+      ctx.fillStyle = flame;
+      ctx.beginPath();
+      ctx.moveTo(radius * 0.3, -radius * 0.8);
+      ctx.quadraticCurveTo(-radius * 0.8, -radius * 1.2, -radius * 2.7, -radius * (0.3 + flicker * 0.13));
+      ctx.quadraticCurveTo(-radius * 1.6, radius * 0.15, -radius * 2.05, radius * 0.65);
+      ctx.quadraticCurveTo(-radius * 0.6, radius * 0.4, -radius * 1.3, radius * 1.1);
+      ctx.quadraticCurveTo(-radius * 0.1, radius * 0.65, radius * 0.65, radius * 0.5);
+      ctx.closePath();
+      ctx.fill();
+
+      const body = ctx.createRadialGradient(-radius * 0.3, -radius * 0.42, 0, 0, 0, radius);
+      body.addColorStop(0, '#FFFFE8');
+      body.addColorStop(0.32, '#FFF39C');
+      body.addColorStop(0.68, fb.dmg > 1 ? '#FFD34B' : '#FFC34E');
+      body.addColorStop(1, '#F07824');
+      circlePath(ctx, 0, 0, radius);
+      ctx.fillStyle = body;
+      ctx.fill();
+      ctx.strokeStyle = '#B95127';
+      ctx.lineWidth = 1.25;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(-radius * 0.04, -radius * 0.07, radius * 0.68, Math.PI * 1.05, Math.PI * 1.65);
+      ctx.strokeStyle = '#FFFCE9';
+      ctx.lineWidth = 1.75;
+      ctx.stroke();
+      if (fb.dmg > 1) {
+        ctx.rotate(-timeSec * 4);
+        ctx.translate(radius * 0.9, -radius * 0.7);
+        sparklePath(ctx, 4);
+        ctx.fillStyle = '#FFFCE2';
+        ctx.fill();
+      }
+    }
+
+    _drawBomb(ctx, proj, timeSec) {
+      const radius = proj.w * 0.62;
+      ctx.rotate(Math.sin(timeSec * 8 + proj.x * 0.03) * 0.2);
+      this._drawGlow(ctx, radius * 2.2, 'rgba(173,102,255,0.13)');
+
+      // The curved wick, brass collar and faceted glass read clearly at 14 px.
+      ctx.beginPath();
+      ctx.moveTo(1, -radius + 1);
+      ctx.bezierCurveTo(0, -radius - 7, 8, -radius - 2, 7, -radius - 8);
+      ctx.strokeStyle = '#482E54';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.strokeStyle = '#E7BC7C';
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+
+      const body = ctx.createRadialGradient(-3, -4, 0, 0, 0, radius * 1.1);
+      body.addColorStop(0, '#E2BAFF');
+      body.addColorStop(0.35, '#A76BE4');
+      body.addColorStop(0.75, '#7041AD');
+      body.addColorStop(1, '#42256B');
+      polygonPath(ctx, [[-radius * 0.5, -radius * 0.87], [radius * 0.42, -radius * 0.88],
+        [radius * 0.94, -radius * 0.35], [radius, radius * 0.4], [radius * 0.45, radius],
+        [-radius * 0.4, radius], [-radius * 0.97, radius * 0.43], [-radius, -radius * 0.35]]);
+      ctx.fillStyle = body;
+      ctx.fill();
+      ctx.strokeStyle = '#352448';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      polygonPath(ctx, [[-radius * 0.82, -radius * 0.3], [-radius * 0.42, -radius * 0.76],
+        [radius * 0.28, -radius * 0.75], [0, -radius * 0.26]]);
+      ctx.fillStyle = 'rgba(246,222,255,0.55)';
+      ctx.fill();
+      polygonPath(ctx, [[radius * 0.8, -radius * 0.15], [radius * 0.81, radius * 0.35],
+        [radius * 0.35, radius * 0.8], [radius * 0.35, radius * 0.2]]);
+      ctx.fillStyle = 'rgba(39,15,80,0.28)';
+      ctx.fill();
+
+      ctx.fillStyle = '#74D9D5';
+      ctx.fillRect(-4, -radius - 1, 8, 3.5);
+      ctx.fillStyle = '#D8FFF0';
+      ctx.fillRect(-3, -radius - 1, 5, 1);
+      ctx.save();
+      ctx.translate(0, 2);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillStyle = '#F8CBFF';
+      ctx.fillRect(-2.2, -2.2, 4.4, 4.4);
+      ctx.restore();
+      ctx.translate(7, -radius - 8);
+      ctx.rotate(timeSec * 5);
+      sparklePath(ctx, 3.6 + Math.sin(timeSec * 29) * 0.8);
+      ctx.fillStyle = '#FFC552';
+      ctx.fill();
+      circlePath(ctx, 0, 0, 1.5);
+      ctx.fillStyle = '#FFF9CD';
+      ctx.fill();
+    }
+
+    _drawBolt(ctx, proj, timeSec) {
+      ctx.rotate(Math.atan2(proj.vy, proj.vx));
+      this._drawGlow(ctx, 19, 'rgba(249,114,195,0.2)');
+      ctx.strokeStyle = 'rgba(246,153,211,0.65)';
+      ctx.lineWidth = 1.4;
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.moveTo(-11 - i * 2, (i - 1) * 3);
+        ctx.lineTo(-7, (i - 1) * 2);
+        ctx.stroke();
+      }
+      polygonPath(ctx, [[-7, -4.5], [1, -5.2], [10, 0], [1, 5.2], [-7, 4.5], [-4, 0]]);
+      const body = ctx.createLinearGradient(0, -5, 0, 5);
+      body.addColorStop(0, '#F8D9FF');
+      body.addColorStop(0.4, '#D18BF0');
+      body.addColorStop(0.6, '#9B4DC4');
+      body.addColorStop(1, '#632C81');
+      ctx.fillStyle = body;
+      ctx.fill();
+      ctx.strokeStyle = '#4B2D62';
+      ctx.lineWidth = 1.25;
+      ctx.stroke();
+      polygonPath(ctx, [[-3, -3.8], [8, 0], [-3, -0.7]]);
+      ctx.fillStyle = '#F5DEFF';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(-3, 0);
+      ctx.lineTo(7, 0);
+      ctx.strokeStyle = '#F4A5E7';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = '#466B7B';
+      ctx.fillRect(-7, -4.4, 3, 8.8);
+      ctx.fillStyle = '#A3E5E9';
+      ctx.fillRect(-6.5, -3.5, 1.6, 5.5);
+      if (Math.sin(timeSec * 20) > 0.4) {
+        circlePath(ctx, 0, -2.2, 1.15);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fill();
+      }
+    }
+
+    _drawPlasma(ctx, proj, timeSec) {
+      const radius = proj.w * 0.56;
+      const pulse = 1 + Math.sin(timeSec * 12 + proj.x * 0.04) * 0.06;
+      ctx.scale(pulse, pulse);
+      this._drawGlow(ctx, radius * 3, 'rgba(176,104,255,0.34)');
+      ctx.save();
+      ctx.rotate(timeSec * 3);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, radius * 1.7, radius * 0.56, -0.45, 0, TAU);
+      ctx.strokeStyle = 'rgba(209,173,255,0.7)';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      ctx.restore();
+
+      const body = ctx.createRadialGradient(-radius * 0.25, -radius * 0.32, 0, 0, 0, radius);
+      body.addColorStop(0, '#FFFFFF');
+      body.addColorStop(0.23, '#F7DFFF');
+      body.addColorStop(0.55, '#CF94FF');
+      body.addColorStop(0.82, '#9245DB');
+      body.addColorStop(1, '#562491');
+      circlePath(ctx, 0, 0, radius);
+      ctx.fillStyle = body;
+      ctx.fill();
+      ctx.strokeStyle = '#6C399D';
+      ctx.lineWidth = 1.1;
+      ctx.stroke();
+      ctx.save();
+      ctx.rotate(-timeSec * 4);
+      ctx.beginPath();
+      ctx.arc(0, 0, radius * 1.2, 0.3, 2.2);
+      ctx.strokeStyle = '#EDC6FF';
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(0, 0, radius * 1.2, 3.6, 5.3);
+      ctx.strokeStyle = '#B5E7FF';
+      ctx.lineWidth = 1.1;
+      ctx.stroke();
+      ctx.restore();
+      polygonPath(ctx, [[-1, -6], [3, -1.5], [0.6, -0.4], [2, 5], [-3.5, 0.4], [-1, -0.7]]);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fill();
+    }
+
+    /** Soft light, rounded volume and crystal facets share the world palette. */
     renderEffects(ctx, camera, timeSec) {
       ctx.save();
-      ctx.imageSmoothingEnabled = false;
+      ctx.imageSmoothingEnabled = true;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      const viewWidth = ctx.canvas.width;
+      const viewHeight = ctx.canvas.height;
+      const visible = (x, y, margin = 48) =>
+        x > -margin && x < viewWidth + margin && y > -margin && y < viewHeight + margin;
 
-      // 1. 奶龙像素火球
-      for (const fb of this.fireballs) {
-        const sx = Math.round(fb.x - camera.x);
-        const sy = Math.round(fb.y);
-        ctx.fillStyle = '#FF3D00';
-        ctx.fillRect(sx, sy, fb.w, fb.h);
-        ctx.fillStyle = '#FFEA00';
-        ctx.fillRect(sx + 3, sy + 3, fb.w - 6, fb.h - 6);
-      }
-
-      // 2. 敌人投射物（小紫兵抛物线炸弹 bomb / 铁帽尖刺弹 bolt / 暴暴龙等离子球 plasma）
-      for (const proj of this.enemyProjectiles) {
-        const sx = Math.round(proj.x - camera.x);
-        const sy = Math.round(proj.y);
-        const pulse = Math.floor(timeSec * 20) % 2 === 0 ? 2 : 0;
-
-        if (proj.kind === 'bomb') {
-          // 紫晶小炸弹 + 闪烁引信火花
-          ctx.fillStyle = '#3B0764';
-          ctx.fillRect(sx, sy, proj.w, proj.h);
-          ctx.fillStyle = '#A855F7';
-          ctx.fillRect(sx + 2, sy + 2, proj.w - 4, proj.h - 4);
-          ctx.fillStyle = pulse ? '#FFEA00' : '#FF3D00';
-          ctx.fillRect(sx + 5, sy - 4, 4, 4);
-        } else if (proj.kind === 'bolt') {
-          // 独眼铁帽紫兵发射的水平紫红能量刺
-          ctx.fillStyle = '#BE185D';
-          ctx.fillRect(sx, sy, proj.w, proj.h);
-          ctx.fillStyle = '#F472B6';
-          ctx.fillRect(sx + 2, sy + 2, proj.w - 4, proj.h - 4);
-        } else {
-          // 暴暴龙紫色等离子能量球
-          ctx.fillStyle = '#6A0DAD';
-          ctx.fillRect(sx - pulse, sy - pulse, proj.w + pulse * 2, proj.h + pulse * 2);
-          ctx.fillStyle = '#E040FB';
-          ctx.fillRect(sx + 2, sy + 2, proj.w - 4, proj.h - 4);
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(sx + 5, sy + 5, 6, 6);
-        }
-      }
-
-      // 3. 爆炸/碎片像素粒子
+      // Trails and smoke sit behind the projectile bodies and the impact flashes.
       for (const pt of this.particles) {
-        const sx = Math.round(pt.x - camera.x);
-        const sy = Math.round(pt.y);
+        const sx = pt.x - camera.x;
+        if (!visible(sx, pt.y)) continue;
+        const ratio = Math.max(0, pt.life / (pt.maxLife || 0.65));
+        const size = pt.size * (pt.shape === 'smoke' ? 1.8 - ratio * 0.8 : 0.45 + ratio * 0.55);
+        ctx.save();
+        ctx.translate(sx, pt.y);
+        ctx.globalAlpha = Math.min(1, ratio * 1.5) * (pt.shape === 'smoke' ? 0.22 : 1);
         ctx.fillStyle = pt.color;
-        ctx.fillRect(sx, sy, pt.size, pt.size);
+        ctx.strokeStyle = pt.color;
+        if (pt.shape === 'spark') {
+          const length = Math.min(9, Math.hypot(pt.vx, pt.vy) * 0.028);
+          const angle = Math.atan2(pt.vy, pt.vx);
+          ctx.rotate(angle);
+          ctx.lineWidth = Math.max(1, size * 0.7);
+          ctx.beginPath();
+          ctx.moveTo(-length, 0);
+          ctx.lineTo(0, 0);
+          ctx.stroke();
+          circlePath(ctx, 0, 0, size * 0.42);
+          ctx.fillStyle = '#FFF4D9';
+          ctx.fill();
+        } else if (pt.shape === 'star') {
+          ctx.rotate(pt.rotation);
+          sparklePath(ctx, size * 1.5);
+          ctx.fill();
+        } else if (pt.shape === 'shard') {
+          ctx.rotate(pt.rotation);
+          polygonPath(ctx, [[-size, 0], [0, -size * 1.4], [size * 0.8, 0], [0, size]]);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.moveTo(0, -size);
+          ctx.lineTo(-size * 0.5, 0);
+          ctx.strokeStyle = 'rgba(255,255,255,0.65)';
+          ctx.lineWidth = 0.8;
+          ctx.stroke();
+        } else {
+          circlePath(ctx, 0, 0, size);
+          ctx.fill();
+        }
+        ctx.restore();
       }
 
-      // 4. 连击与加分浮动文字
+      for (const impact of this.impacts) {
+        const sx = impact.x - camera.x;
+        if (!visible(sx, impact.y, impact.size + 8)) continue;
+        const progress = 1 - impact.life / impact.maxLife;
+        const ease = 1 - Math.pow(1 - progress, 3);
+        ctx.save();
+        ctx.translate(sx, impact.y);
+        ctx.globalAlpha = (1 - progress) * 0.8;
+        circlePath(ctx, 0, 0, impact.size * (0.2 + ease * 0.8));
+        ctx.strokeStyle = impact.color;
+        ctx.lineWidth = Math.max(0.6, 3 * (1 - progress));
+        ctx.stroke();
+        if (progress < 0.46) {
+          ctx.globalAlpha = (1 - progress / 0.46) * 0.95;
+          ctx.rotate(Math.PI / 4);
+          sparklePath(ctx, impact.size * (0.5 + progress * 0.4), 0.3);
+          ctx.fillStyle = '#FFF6DD';
+          ctx.fill();
+          ctx.scale(0.55, 0.55);
+          ctx.rotate(Math.PI / 4);
+          sparklePath(ctx, impact.size * 0.8);
+          ctx.fillStyle = impact.color;
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      for (const fb of this.fireballs) {
+        if (!visible(fb.x - camera.x, fb.y)) continue;
+        ctx.save();
+        ctx.translate(fb.x + fb.w * 0.5 - camera.x, fb.y + fb.h * 0.5);
+        this._drawFireball(ctx, fb, timeSec);
+        ctx.restore();
+      }
+
+      for (const proj of this.enemyProjectiles) {
+        if (!visible(proj.x - camera.x, proj.y)) continue;
+        ctx.save();
+        ctx.translate(proj.x + proj.w * 0.5 - camera.x, proj.y + proj.h * 0.5);
+        if (proj.kind === 'bomb') this._drawBomb(ctx, proj, timeSec);
+        else if (proj.kind === 'bolt') this._drawBolt(ctx, proj, timeSec);
+        else this._drawPlasma(ctx, proj, timeSec);
+        ctx.restore();
+      }
+
       for (const ft of this.floatingTexts) {
-        const sx = Math.round(ft.x - camera.x);
-        const sy = Math.round(ft.y);
-        ctx.globalAlpha = Math.min(1, ft.life / 0.3);
-        ctx.font = `bold ${ft.size}px "Courier New", monospace`;
+        const sx = ft.x - camera.x;
+        if (!visible(sx, ft.y, 240)) continue;
+        const entrance = Math.min(1, (ft.maxLife - ft.life) / 0.12);
+        ctx.save();
+        ctx.translate(sx, ft.y);
+        ctx.scale(0.88 + entrance * 0.12, 0.88 + entrance * 0.12);
+        ctx.globalAlpha = Math.min(1, ft.life / 0.24);
+        ctx.font = `800 ${ft.size}px "Nunito", "PingFang SC", "Microsoft YaHei", sans-serif`;
         ctx.textAlign = 'center';
-        ctx.fillStyle = '#1E1B2E';
-        ctx.fillText(ft.text, sx + 2, sy + 2);
+        ctx.lineWidth = 3.5;
+        ctx.strokeStyle = 'rgba(40,29,51,0.8)';
+        ctx.strokeText(ft.text, 0, 0);
         ctx.fillStyle = ft.color;
-        ctx.fillText(ft.text, sx, sy);
+        ctx.fillText(ft.text, 0, 0);
+        ctx.restore();
       }
 
       ctx.restore();
     }
+
   }
 
   ns.Physics = new PhysicsWorld();
