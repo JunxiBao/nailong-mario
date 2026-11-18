@@ -36,6 +36,9 @@ window.NailongAdventure = window.NailongAdventure || {};
       this.globalTimeSec = 0;
       this.subtitleTimer = 0;
       this.leaderboardTab = "score";
+      this.orientationBlocked = false;
+      this._resumeAfterOrientation = false;
+      this._orientationLockPending = false;
 
       this.input = {
         left: false,
@@ -70,6 +73,7 @@ window.NailongAdventure = window.NailongAdventure || {};
       this._refreshContinueButton();
 
       this.loadLevel(ns.Leaderboard.progress.unlockedLevel || 1, false);
+      this._bindOrientationGuard();
 
       this.lastFrameTime = performance.now();
       requestAnimationFrame((ts) => this._loop(ts));
@@ -84,6 +88,7 @@ window.NailongAdventure = window.NailongAdventure || {};
 
     _bindInputs() {
       window.addEventListener("keydown", (e) => {
+        if (this.orientationBlocked) return;
         if (
           document.activeElement &&
           document.activeElement.tagName === "INPUT"
@@ -183,7 +188,8 @@ window.NailongAdventure = window.NailongAdventure || {};
       const fireBtn = document.getElementById("touch-fire");
 
       const updateDpadFromTouches = (e) => {
-        if (!dpadZone || !leftBtn || !rightBtn) return;
+        if (this.orientationBlocked || !dpadZone || !leftBtn || !rightBtn)
+          return;
         const rect = dpadZone.getBoundingClientRect();
         const midX = rect.left + rect.width * 0.5;
         let hasLeft = false;
@@ -236,6 +242,7 @@ window.NailongAdventure = window.NailongAdventure || {};
       const bindHoldBtn = (btn, onDown, onUp) => {
         if (!btn) return;
         const start = (ev) => {
+          if (this.orientationBlocked) return;
           ev.preventDefault();
           ns.Audio.unlock();
           btn.classList.add("touch-pressed");
@@ -257,6 +264,7 @@ window.NailongAdventure = window.NailongAdventure || {};
       // 桌面端鼠标点击左/右按钮回退兼容
       if (leftBtn) {
         leftBtn.addEventListener("mousedown", () => {
+          if (this.orientationBlocked) return;
           ns.Audio.unlock();
           this.input.left = true;
           leftBtn.classList.add("touch-pressed");
@@ -270,6 +278,7 @@ window.NailongAdventure = window.NailongAdventure || {};
       }
       if (rightBtn) {
         rightBtn.addEventListener("mousedown", () => {
+          if (this.orientationBlocked) return;
           ns.Audio.unlock();
           this.input.right = true;
           rightBtn.classList.add("touch-pressed");
@@ -466,6 +475,120 @@ window.NailongAdventure = window.NailongAdventure || {};
       }
     }
 
+    _bindOrientationGuard() {
+      const sync = () => this._updateOrientationGuard();
+      window.addEventListener("resize", sync);
+      window.addEventListener("orientationchange", sync);
+      window.addEventListener("pageshow", sync);
+      document.addEventListener("fullscreenchange", sync);
+      document.addEventListener("webkitfullscreenchange", sync);
+      window.screen?.orientation?.addEventListener?.("change", sync);
+      const portraitQuery = window.matchMedia?.("(orientation: portrait)");
+      if (portraitQuery?.addEventListener)
+        portraitQuery.addEventListener("change", sync);
+      else portraitQuery?.addListener?.(sync);
+
+      const button = document.getElementById("btn-orientation-landscape");
+      if (typeof window.screen?.orientation?.lock !== "function" && button) {
+        button.textContent = "我已横屏，重新检测";
+      }
+      button?.addEventListener("click", () => {
+        this._updateOrientationGuard();
+        if (this.orientationBlocked) this._requestLandscape();
+      });
+      sync();
+      document.body.classList.add("orientation-ready");
+    }
+
+    _updateOrientationGuard() {
+      const width = window.innerWidth || document.documentElement.clientWidth;
+      const height =
+        window.innerHeight || document.documentElement.clientHeight;
+      const portrait =
+        width && height
+          ? height > width
+          : !!window.matchMedia?.("(orientation: portrait)").matches;
+      // A soft keyboard can make a portrait phone's viewport look landscape.
+      const touchScreen = !!window.matchMedia?.("(pointer: coarse)").matches;
+      const screenType = window.screen?.orientation?.type;
+      const physicalPortrait =
+        typeof screenType === "string"
+          ? screenType.startsWith("portrait")
+          : typeof window.orientation === "number" &&
+            Math.abs(window.orientation) % 180 === 0;
+      const blocked = !!portrait || (touchScreen && physicalPortrait);
+      const wasBlocked = this.orientationBlocked;
+      this.orientationBlocked = blocked;
+      const guard = document.getElementById("orientation-guard");
+      const wrapper = document.getElementById("app-wrapper");
+      if (guard) {
+        guard.hidden = !blocked;
+        guard.setAttribute("aria-hidden", String(!blocked));
+      }
+      document.body.classList.toggle("orientation-blocked", blocked);
+      if (wrapper) {
+        wrapper.inert = blocked;
+        if (blocked) wrapper.setAttribute("aria-hidden", "true");
+        else wrapper.removeAttribute("aria-hidden");
+      }
+
+      if (blocked) {
+        this._clearInputs();
+        if (this.state === "playing") {
+          this._resumeAfterOrientation = true;
+          this.pauseGame();
+        }
+        if (!wasBlocked) {
+          this._focusBeforeOrientation = document.activeElement;
+          this._focusBeforeOrientation?.blur?.();
+          document
+            .getElementById("btn-orientation-landscape")
+            ?.focus?.({ preventScroll: true });
+        }
+      } else if (wasBlocked) {
+        const shouldResume = this._resumeAfterOrientation;
+        this._resumeAfterOrientation = false;
+        if (shouldResume && !document.hidden) this.resumeGame();
+        if (this._focusBeforeOrientation?.isConnected) {
+          this._focusBeforeOrientation.focus?.({ preventScroll: true });
+        }
+        this._focusBeforeOrientation = null;
+      }
+    }
+
+    async _requestLandscape() {
+      if (this._orientationLockPending) return;
+      const orientation = window.screen?.orientation;
+      const hint = document.getElementById("orientation-hint");
+      const fallback = "请关闭设备的屏幕方向锁定，再将设备旋转到横屏。";
+      if (typeof orientation?.lock !== "function") {
+        if (hint) hint.textContent = fallback;
+        return;
+      }
+      const button = document.getElementById("btn-orientation-landscape");
+      this._orientationLockPending = true;
+      if (button) button.disabled = true;
+      if (hint) hint.textContent = "正在切换横屏，请稍候…";
+      try {
+        // Browsers that require fullscreen must receive this request from a click.
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+          const element = document.documentElement;
+          if (element.requestFullscreen) await element.requestFullscreen();
+          else if (element.webkitRequestFullscreen)
+            await element.webkitRequestFullscreen();
+        }
+        await orientation.lock("landscape");
+        if (hint) hint.textContent = "请保持设备横屏，冒险即将继续。";
+      } catch (_error) {
+        if (hint) hint.textContent = fallback;
+      } finally {
+        this._orientationLockPending = false;
+        if (button) button.disabled = false;
+        // Only the actual viewport can dismiss the gate, even if the API succeeds.
+        this._updateOrientationGuard();
+      }
+    }
+
     _toggleFullscreen() {
       const doc = document;
       const elem = document.documentElement;
@@ -562,12 +685,14 @@ window.NailongAdventure = window.NailongAdventure || {};
       }
 
       if (startPlaying) {
+        this._resumeAfterOrientation = false;
         this.state = "playing";
         this._hideAllOverlays();
         ns.Audio.startBgm(this.level.isBoss ? "boss" : this.level.chapter);
         if (this.level.id === 1 || this.level.isBoss) {
           ns.Audio.playVoiceLine();
         }
+        this._updateOrientationGuard();
       }
     }
 
@@ -590,6 +715,7 @@ window.NailongAdventure = window.NailongAdventure || {};
 
     resumeGame() {
       if (this.state !== "paused") return;
+      if (this.orientationBlocked) return;
       this.state = "playing";
       this._hideAllOverlays();
     }
@@ -989,6 +1115,10 @@ window.NailongAdventure = window.NailongAdventure || {};
     _loop(timestamp) {
       const rawDt = (timestamp - this.lastFrameTime) / 1000;
       this.lastFrameTime = timestamp;
+      if (this.orientationBlocked) {
+        requestAnimationFrame((ts) => this._loop(ts));
+        return;
+      }
       const dt = Math.min(0.033, Math.max(0.001, rawDt));
       this.globalTimeSec += dt;
 
