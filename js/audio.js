@@ -71,7 +71,6 @@ window.NailongAdventure = window.NailongAdventure || {};
       this.currentBgmKey = 1;
       this.voiceIndex = 0;
       this.voiceElements = [];
-      this.onSubtitle = null;
       this._initVoices();
     }
 
@@ -254,9 +253,6 @@ window.NailongAdventure = window.NailongAdventure || {};
       const clip = this.voiceElements[this.voiceIndex % Math.max(1, this.voiceElements.length)];
       this.voiceIndex++;
       if (!clip) return;
-      if (this.onSubtitle) {
-        this.onSubtitle(clip.subtitle);
-      }
       if (this.muted) return;
       try {
         clip.el.currentTime = 0;

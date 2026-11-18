@@ -393,21 +393,6 @@ svg {
   color: #5e7556;
   box-shadow: 0 3px 15px #55794d14;
 }
-.voice-toast {
-  position: absolute;
-  bottom: 25px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 8;
-  padding: 9px 22px;
-  border-radius: 18px;
-  background: #fff9dc;
-  color: #6f7142;
-  border: 2px solid #f1cf65;
-  font-size: 14px;
-  font-weight: 750;
-  pointer-events: none;
-}
 .wind-banner {
   position: absolute;
   right: 20px;
@@ -423,8 +408,7 @@ svg {
 .is-menu .hud-dashboard,
 .is-menu #touch-controls,
 .is-menu .tip-banner,
-.is-menu .wind-banner,
-.is-menu .voice-toast {
+.is-menu .wind-banner {
   display: none !important;
 }
 .is-menu #canvas-stage {

@@ -34,7 +34,6 @@ window.NailongAdventure = window.NailongAdventure || {};
       this.levelGolden = [false, false, false];
       this.levelTimeSec = 0;
       this.globalTimeSec = 0;
-      this.subtitleTimer = 0;
       this.leaderboardTab = "score";
       this.orientationBlocked = false;
       this._resumeAfterOrientation = false;
@@ -53,15 +52,6 @@ window.NailongAdventure = window.NailongAdventure || {};
 
     _init() {
       ns.Sprites.init();
-
-      ns.Audio.onSubtitle = (text) => {
-        const toast = document.getElementById("voice-subtitle-toast");
-        if (toast) {
-          toast.textContent = text;
-          toast.classList.remove("hidden");
-          this.subtitleTimer = 3.0;
-        }
-      };
 
       this._bindInputs();
       this._bindUI();
@@ -1121,15 +1111,6 @@ window.NailongAdventure = window.NailongAdventure || {};
       }
       const dt = Math.min(0.033, Math.max(0.001, rawDt));
       this.globalTimeSec += dt;
-
-      if (this.subtitleTimer > 0) {
-        this.subtitleTimer -= dt;
-        if (this.subtitleTimer <= 0) {
-          document
-            .getElementById("voice-subtitle-toast")
-            ?.classList.add("hidden");
-        }
-      }
 
       if (this.state === "playing" && this.level && this.player) {
         this.levelTimeSec += dt;
