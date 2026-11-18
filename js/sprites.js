@@ -1176,6 +1176,65 @@ window.NailongAdventure = window.NailongAdventure || {};
     );
   }
 
+  function buildHeartSprite(size = 36) {
+    const half = 18;
+    const HEART_RAMP = [
+      [158, 18, 52],
+      [212, 34, 78],
+      [244, 63, 94],
+      [251, 113, 133],
+      [255, 205, 215],
+    ];
+    return renderSdfCanvas(
+      size,
+      size,
+      half,
+      (x, y, z) => {
+        const lobeL = sdSphere(x, y, z, -5.2, -3.5, 1, 7.6);
+        const lobeR = sdSphere(x, y, z, 5.2, -3.5, 1, 7.6);
+        const tip = sdCapsule(x, y, z, -4.5, -1.0, 1, 0, 10.5, 1, 5.8);
+        const tipR = sdCapsule(x, y, z, 4.5, -1.0, 1, 0, 10.5, 1, 5.8);
+        return smin(smin(lobeL, lobeR, 2.2), smin(tip, tipR, 3.0), 2.8);
+      },
+      (wx, wy, _wz, _nx, _ny, _nz, shade) => {
+        if (Math.hypot(wx + 5.5, wy + 5.5) < 3.0) {
+          return [255, 245, 248];
+        }
+        return quantizeRamp(shade, HEART_RAMP);
+      },
+      [68, 12, 28]
+    );
+  }
+
+  function buildAtkGemSprite(size = 36) {
+    const half = 18;
+    const GEM_RAMP = [
+      [146, 64, 14],
+      [217, 119, 6],
+      [245, 158, 11],
+      [251, 191, 36],
+      [254, 243, 199],
+    ];
+    return renderSdfCanvas(
+      size,
+      size,
+      half,
+      (x, y, z) => {
+        const core = sdEllipsoid(x, y, z, 0, 0, 1, 9.5, 12.5, 8.5);
+        const wingL = sdCapsule(x, y, z, -11, 2, 1, -3, -9, 1, 3.8);
+        const wingR = sdCapsule(x, y, z, 11, 2, 1, 3, -9, 1, 3.8);
+        return smin(core, Math.min(wingL, wingR), 2.0);
+      },
+      (wx, wy, _wz, _nx, _ny, _nz, shade) => {
+        if (Math.abs(wx) < 2.4 && Math.abs(wy) < 6.5) {
+          return [255, 252, 235];
+        }
+        return quantizeRamp(shade, GEM_RAMP);
+      },
+      [69, 26, 3]
+    );
+  }
+
   // ============================================================================
   // 8. 精灵缓存管理器与实时绘制接口 (SpriteEngine)
   // ============================================================================
@@ -1202,6 +1261,8 @@ window.NailongAdventure = window.NailongAdventure || {};
       goldenDrumstick: null,
       chili: null,
       potion: null,
+      heart: null,
+      atkGem: null,
     },
     codex: {},
   };
@@ -1280,6 +1341,8 @@ window.NailongAdventure = window.NailongAdventure || {};
     cache.items.goldenDrumstick = buildDrumstickSprite(true, 40);
     cache.items.chili = buildChiliSprite(36);
     cache.items.potion = buildPotionSprite(36);
+    cache.items.heart = buildHeartSprite(36);
+    cache.items.atkGem = buildAtkGemSprite(36);
 
     // 6. 图鉴展示帧直接复用高精像素帧（零额外耗时，保持锐利像素颗粒感）
     cache.codex.nailong = [
@@ -1526,6 +1589,18 @@ window.NailongAdventure = window.NailongAdventure || {};
       ctx.drawImage(cache.items.chili, cx - 16, cy - 16, 32, 32);
     } else if (item.type === 'potion') {
       ctx.drawImage(cache.items.potion, cx - 16, cy - 16, 32, 32);
+    } else if (item.type === 'heart') {
+      ctx.fillStyle = 'rgba(244, 63, 94, 0.22)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, 17 + Math.sin(timeSec * 8) * 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.drawImage(cache.items.heart, cx - 16, cy - 16, 32, 32);
+    } else if (item.type === 'atk_gem') {
+      ctx.fillStyle = 'rgba(245, 158, 11, 0.25)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, 17 + Math.sin(timeSec * 8) * 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.drawImage(cache.items.atkGem, cx - 16, cy - 16, 32, 32);
     }
     ctx.restore();
   }

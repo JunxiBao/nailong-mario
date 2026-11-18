@@ -8,14 +8,19 @@
 </head>
 <body>
   <div id="app-wrapper">
-    <!-- 顶部极简优雅状态栏 -->
+    <!-- 顶部阳光奶油亮色状态栏（含奶龙动态像素徽章与增益状态） -->
     <header id="hud-bar" class="glass-panel">
       <div class="hud-left">
+        <div class="nailong-brand-badge" id="btn-hud-brand" title="点击查看奶龙角色与道具图鉴">
+          <canvas id="hud-avatar-canvas" width="38" height="38"></canvas>
+          <span class="brand-name">奶龙大冒险</span>
+        </div>
         <div class="level-pill" id="hud-level-title">第 1 关 · 初入青草地</div>
         <div class="hud-metric">
           <span class="metric-label">生命</span>
           <span id="hud-hearts" class="hearts-val">3 / 3</span>
           <span id="hud-power-badge" class="state-tag">标准</span>
+          <span id="hud-atk-badge" class="state-tag atk-active hidden">伤害x2</span>
         </div>
         <div class="hud-metric">
           <span class="metric-label">星级</span>
@@ -112,8 +117,9 @@
 
           <div class="controls-guide">
             <span>移动：A / D 或 方向键</span>
-            <span>跳跃：W / 空格 / K（轻按小跳·长按大跳）</span>
+            <span>跳跃：W / 空格（踩红白蘑菇冲上高空秘境）</span>
             <span>喷火球：J / Z / X</span>
+            <span>新道具：💖蜜桃回血果(+2生命) · ⚡狂暴龙晶(伤害x2)</span>
           </div>
         </div>
       </section>

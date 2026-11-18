@@ -94,6 +94,7 @@ window.NailongAdventure = window.NailongAdventure || {};
         maxHp: 3,
         isBig: false, // 变大奶茶药水护盾（抵挡一次伤害）
         hasFire: false, // 红辣椒喷火形态
+        atkBoostTimer: 0, // 狂暴龙晶双倍伤害计时器
         fireCooldown: 0,
         invincibleTimer: 0,
         hurtTimer: 0,
@@ -117,13 +118,14 @@ window.NailongAdventure = window.NailongAdventure || {};
       const rangeMult = weatherMeta ? weatherMeta.fireballRangeMult : 1.0;
 
       this.fireballs.push({
-        x: player.facing >= 0 ? player.x + player.w + 2 : player.x - 14,
-        y: player.y + player.h * 0.38,
-        w: 14,
-        h: 14,
-        vx: player.facing * 430,
+        x: player.facing >= 0 ? player.x + player.w + 2 : player.x - 16,
+        y: player.y + player.h * 0.36,
+        w: player.atkBoostTimer > 0 ? 18 : 14,
+        h: player.atkBoostTimer > 0 ? 18 : 14,
+        vx: player.facing * (player.atkBoostTimer > 0 ? 480 : 430),
         vy: 80,
         bounces: 0,
+        dmg: player.atkBoostTimer > 0 ? 2 : 1,
         life: 1.35 * rangeMult,
       });
       if (ns.Audio) ns.Audio.playFireball();
@@ -183,6 +185,7 @@ window.NailongAdventure = window.NailongAdventure || {};
       if (player.happyTimer > 0) player.happyTimer = Math.max(0, player.happyTimer - dt);
       if (player.attackTimer > 0) player.attackTimer = Math.max(0, player.attackTimer - dt);
       if (player.fireCooldown > 0) player.fireCooldown = Math.max(0, player.fireCooldown - dt);
+      if (player.atkBoostTimer > 0) player.atkBoostTimer = Math.max(0, player.atkBoostTimer - dt);
 
       player.squashX *= Math.pow(0.08, dt);
       player.squashY *= Math.pow(0.08, dt);
@@ -278,8 +281,11 @@ window.NailongAdventure = window.NailongAdventure || {};
         this.shootPlayerFireball(player, wMeta);
       }
 
-      // 5. 水平位移与固体砖块碰撞
-      player.x += (player.vx + windOffsetVx) * dt;
+      // 5. 水平位移与固体砖块碰撞（记录 prevX，防止流沙下沉或大风天误触发整块地板侧向瞬移！）
+      const prevX = player.x;
+      const prevRight = player.x + player.w;
+      const totalVx = player.vx + windOffsetVx;
+      player.x += totalVx * dt;
       if (player.x < 0) {
         player.x = 0;
         player.vx = 0;
@@ -290,13 +296,15 @@ window.NailongAdventure = window.NailongAdventure || {};
       }
 
       for (const t of level.tiles) {
-        if (t.broken || t.type === 'cloud_platform') continue;
+        if (t.broken || t.type === 'cloud_platform' || t.type === 'quicksand') continue;
         if (t.type === 'ghost_bridge' && t.state === 'gone') continue;
+        // 仅当奶龙身体确实处于墙体高度范围内（而非站在平地上或轻微陷入流沙）时才做横向阻挡
+        if (player.y + player.h <= t.y + 8 || player.y >= t.y + t.h - 4) continue;
         if (aabbOverlap(player, t)) {
-          if (player.vx + windOffsetVx > 0) {
+          if (totalVx > 0 && prevRight <= t.x + 14) {
             player.x = t.x - player.w;
             player.vx = 0;
-          } else if (player.vx + windOffsetVx < 0) {
+          } else if (totalVx < 0 && prevX >= t.x + t.w - 14) {
             player.x = t.x + t.w;
             player.vx = 0;
           }
@@ -312,52 +320,61 @@ window.NailongAdventure = window.NailongAdventure || {};
       player.onGround = false;
       player.inQuicksand = false;
 
+      // 先优先处理普通坚实地面，再处理流沙，避免跨交界处时陷入相邻砖块下方
+      let landedSolid = false;
       for (const t of level.tiles) {
-        if (t.broken) continue;
+        if (t.broken || t.type === 'quicksand') continue;
         if (t.type === 'ghost_bridge' && t.state === 'gone') continue;
 
         // 单向云朵平台：仅从上方落下时站立
         if (t.type === 'cloud_platform') {
-          if (player.vy >= 0 && prevBottom <= t.y + 10 && aabbOverlap(player, t)) {
+          if (player.vy >= 0 && prevBottom <= t.y + 12 && aabbOverlap(player, t)) {
             player.y = t.y - player.h;
             player.vy = 0;
             player.onGround = true;
             player.surfaceType = 'normal';
+            landedSolid = true;
           }
           continue;
         }
 
         if (!aabbOverlap(player, t)) continue;
 
-        if (player.vy >= 0 && prevBottom <= t.y + 16) {
-          // 落在砖块顶部
-          if (t.type === 'quicksand') {
-            // 第二章流沙陷阱：缓慢下沉，但不会瞬间致死
-            player.inQuicksand = true;
-            player.onGround = true;
-            player.vy = 22;
-            if (player.y + player.h > t.y + 20) {
-              player.y = t.y + 20 - player.h;
-            }
-          } else {
-            player.y = t.y - player.h;
-            player.vy = 0;
-            player.onGround = true;
-            player.surfaceType = t.type === 'ice' ? 'ice' : 'normal';
-            if (t.type === 'ghost_bridge' && t.state === 'solid') {
-              t.state = 'shaking';
-              t.timer = 0.85;
-            }
-            if (t.type === 'normal' || t.type === 'ice') {
-              player.safeX = player.x;
-              player.safeY = t.y - player.h - 2;
-            }
+        if (player.vy >= 0 && prevBottom <= t.y + 22) {
+          player.y = t.y - player.h;
+          player.vy = 0;
+          player.onGround = true;
+          landedSolid = true;
+          player.surfaceType = t.type === 'ice' ? 'ice' : 'normal';
+          if (t.type === 'ghost_bridge' && t.state === 'solid') {
+            t.state = 'shaking';
+            t.timer = 0.85;
+          }
+          if (t.type === 'normal' || t.type === 'ice') {
+            player.safeX = player.x;
+            player.safeY = t.y - player.h - 2;
           }
         } else if (player.vy < 0 && player.y >= t.y + t.h - 18) {
           // 从下方顶击砖块！
           player.y = t.y + t.h;
           player.vy = 45;
           this._handleBlockBump(t, level, player, stateCallbacks);
+        }
+      }
+
+      if (!landedSolid) {
+        for (const t of level.tiles) {
+          if (t.type !== 'quicksand') continue;
+          if (!aabbOverlap(player, t)) continue;
+          if (player.vy >= -20 && prevBottom <= t.y + 28) {
+            // 第二章流沙陷阱：缓慢下沉最多 10px，绝不引发穿模瞬移！
+            player.inQuicksand = true;
+            player.onGround = true;
+            player.vy = 18;
+            if (player.y + player.h > t.y + 10) {
+              player.y = t.y + 10 - player.h;
+            }
+          }
         }
       }
 
@@ -433,8 +450,29 @@ window.NailongAdventure = window.NailongAdventure || {};
             player.isBig = true;
             player.hp = Math.min(player.maxHp, player.hp + 1);
             stateCallbacks.onAddScore(300);
-            this.spawnFloatingText(item.x, item.y - 10, '🧋波波奶茶护盾+生命恢复!', '#4ADE80', 16);
+            this.spawnFloatingText(item.x, item.y - 10, '🧋波波奶茶护盾+生命恢复!', '#10B981', 16);
             this.spawnBurstParticles(item.x + 16, item.y + 16, '#4ADE80', 16);
+            if (ns.Audio) ns.Audio.playPowerup();
+          } else if (item.type === 'heart') {
+            const oldHp = player.hp;
+            player.hp = Math.min(player.maxHp, player.hp + 2);
+            const healed = player.hp - oldHp;
+            stateCallbacks.onAddScore(350);
+            this.spawnFloatingText(
+              item.x,
+              item.y - 10,
+              healed > 0 ? `💖蜜桃回血果 +${healed} HP!` : '💖满血奖励 +350分!',
+              '#F43F5E',
+              16
+            );
+            this.spawnBurstParticles(item.x + 16, item.y + 16, '#FB7185', 16);
+            if (ns.Audio) ns.Audio.playPowerup();
+          } else if (item.type === 'atk_gem') {
+            player.atkBoostTimer = 10.0;
+            player.hasFire = true;
+            stateCallbacks.onAddScore(400);
+            this.spawnFloatingText(item.x, item.y - 10, '⚡狂暴龙晶: 攻击伤害x2 (10秒)!', '#F59E0B', 16);
+            this.spawnBurstParticles(item.x + 16, item.y + 16, '#FBBF24', 18);
             if (ns.Audio) ns.Audio.playPowerup();
           }
         }
@@ -554,7 +592,7 @@ window.NailongAdventure = window.NailongAdventure || {};
           if (en.dead || en.squashed) continue;
           if (aabbOverlap(fb, en)) {
             fb.life = 0;
-            this._damageEnemy(en, 1, player, stateCallbacks, true);
+            this._damageEnemy(en, fb.dmg || 1, player, stateCallbacks, true);
             break;
           }
         }
@@ -726,13 +764,14 @@ window.NailongAdventure = window.NailongAdventure || {};
               player.vy = -380;
               this.damagePlayer(player, '铁帽尖刺扎脚！请用红辣椒火球(J/Z)击败它！');
             } else {
-              // 踩踏成功！触发连击翻倍与弹起
+              // 踩踏成功！触发连击翻倍与弹起（若处于狂暴龙晶状态，踩踏伤害 x2！）
               player.airCombo = (player.airCombo || 0) + 1;
               const comboMult = Math.min(8, Math.pow(2, player.airCombo - 1));
+              const stompDmg = player.atkBoostTimer > 0 ? 2 : 1;
               player.vy = input.jumpHeld ? -510 : -420;
               player.squashX = -0.15;
               player.squashY = 0.18;
-              this._damageEnemy(en, 1, player, stateCallbacks, false, comboMult);
+              this._damageEnemy(en, stompDmg, player, stateCallbacks, false, comboMult);
             }
           } else if (en.hurtTimer <= 0) {
             this.damagePlayer(player, en.type.includes('minion') ? '被小紫兵主动冲撞咬伤啦！' : '被暴暴龙猛烈撞击！');
@@ -886,7 +925,7 @@ window.NailongAdventure = window.NailongAdventure || {};
         // Boss 受击反馈
         const pts = 200 * comboMult;
         stateCallbacks.onAddScore(pts);
-        this.spawnFloatingText(en.x, en.y - 16, `💥暴暴龙受击 -1 HP! (+${pts})`, '#38BDF8', 15);
+        this.spawnFloatingText(en.x, en.y - 16, `💥暴暴龙受击 -${dmg} HP! (+${pts})`, '#38BDF8', 15);
         this.spawnBurstParticles(en.x + en.w * 0.5, en.y + 20, '#38BDF8', 12, 160);
       }
     }

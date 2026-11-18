@@ -218,6 +218,7 @@ window.NailongAdventure = window.NailongAdventure || {};
       };
       document.getElementById('btn-open-codex')?.addEventListener('click', openCodex);
       document.getElementById('btn-menu-codex')?.addEventListener('click', openCodex);
+      document.getElementById('btn-hud-brand')?.addEventListener('click', openCodex);
 
       const openLb = () => {
         ns.Audio.unlock();
@@ -461,6 +462,16 @@ window.NailongAdventure = window.NailongAdventure || {};
         }
       }
 
+      const atkBadge = document.getElementById('hud-atk-badge');
+      if (atkBadge) {
+        if (this.player.atkBoostTimer > 0) {
+          atkBadge.classList.remove('hidden');
+          atkBadge.textContent = `⚡伤害x2 (${Math.ceil(this.player.atkBoostTimer)}s)`;
+        } else {
+          atkBadge.classList.add('hidden');
+        }
+      }
+
       // 有几颗星就显示几颗实心星 ★，0 颗时显示 —
       const earnedStars = this.levelGolden.filter(Boolean).length;
       document.getElementById('hud-golden-stars').textContent =
@@ -526,7 +537,7 @@ window.NailongAdventure = window.NailongAdventure || {};
         header.className = 'chapter-block-header';
         header.innerHTML = `
           <span class="chapter-block-title">${ch.name}</span>
-          <span class="chapter-block-desc" style="color:${chapUnlocked ? '#94a3b8' : '#fca5a5'}">${rightStatusText}</span>
+          <span class="chapter-block-desc" style="color:${chapUnlocked ? '#64748b' : '#e11d48'}">${rightStatusText}</span>
         `;
         block.appendChild(header);
 
@@ -590,11 +601,11 @@ window.NailongAdventure = window.NailongAdventure || {};
         const tr = document.createElement('tr');
         const isMe = row.playerId === ns.Leaderboard.playerId;
         if (isMe) {
-          tr.style.background = 'rgba(245, 158, 11, 0.08)';
+          tr.style.background = 'rgba(245, 158, 11, 0.14)';
         }
         tr.innerHTML = `
           <td><b>#${row.rank}</b></td>
-          <td style="color:${isMe ? '#fbbf24' : '#f8fafc'};font-weight:600;">${row.nickname}${isMe ? ' (我)' : ''}</td>
+          <td style="color:${isMe ? '#d97706' : '#1e293b'};font-weight:700;">${row.nickname}${isMe ? ' (我)' : ''}</td>
           <td>${row.score.toLocaleString()}</td>
           <td>${row.drumsticks}</td>
           <td>第 ${row.maxLevel} 关</td>
@@ -628,6 +639,20 @@ window.NailongAdventure = window.NailongAdventure || {};
       drawPair('menu-canvas-minion1', 'codex-canvas-minion1', cCache.minionTwin, 4.0);
       drawPair('menu-canvas-minion2', 'codex-canvas-minion2', cCache.minionCyclops, 4.0);
       drawPair('menu-canvas-xiaoqi', 'codex-canvas-xiaoqi', cCache.xiaoqi, 2.2);
+    }
+
+    _renderHudAvatar(timeSec) {
+      const cv = document.getElementById('hud-avatar-canvas');
+      const cCache = ns.Sprites.cache.codex;
+      if (!cv || !cCache.nailong) return;
+      const ctx = cv.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+      ctx.clearRect(0, 0, cv.width, cv.height);
+      const frame =
+        this.player && this.player.hasFire
+          ? ns.Sprites.cache.nailong.fire.right.idle[Math.floor(timeSec * 3) % 2]
+          : cCache.nailong[Math.floor(timeSec * 2) % 2];
+      ctx.drawImage(frame, 0, 1, cv.width, cv.height);
     }
 
     _loop(timestamp) {
@@ -676,9 +701,11 @@ window.NailongAdventure = window.NailongAdventure || {};
 
         this._syncHUD();
         this._syncWeatherHUD();
+        this._renderHudAvatar(this.globalTimeSec);
       } else {
         ns.Weather.update(dt, null, this.camera, VIEW_W, VIEW_H, 468);
         this._renderShowcaseCanvases(this.globalTimeSec);
+        this._renderHudAvatar(this.globalTimeSec);
       }
 
       this._renderScene();

@@ -185,7 +185,18 @@ window.NailongAdventure = window.NailongAdventure || {};
         const surf = spec.isIce ? 'ice' : 'normal';
         addGroundColumn(tx, surf, 2);
         if (tx % 4 === 2 && tx < bossArenaStart) {
-          decorations.push({ x: tx * TILE_SIZE, y: groundY, chapter: spec.chapter, kind: tx % 8 === 2 ? 'A' : 'B' });
+          if (spec.chapter === 1 && tx % 8 !== 2) {
+            hazards.push({
+              type: 'spring',
+              x: tx * TILE_SIZE + 2,
+              y: groundY - 22,
+              w: 32,
+              h: 22,
+              bounceAnim: 0,
+            });
+          } else {
+            decorations.push({ x: tx * TILE_SIZE, y: groundY, chapter: spec.chapter, kind: tx % 8 === 2 ? 'A' : 'B' });
+          }
         }
         tx++;
         continue;
@@ -297,14 +308,26 @@ window.NailongAdventure = window.NailongAdventure || {};
           const curTx = tx + i;
           addGroundColumn(curTx, surf, hTiles);
 
-          // 放置章节装饰物（放在段落首格 i===0，避开上方砖块列）
+          // 放置章节装饰物或弹力蘑菇（放在段落首格 i===0，避开上方砖块列）
           if (i === 0 && !isNearGoldenSpot(curTx)) {
-            decorations.push({
-              x: curTx * TILE_SIZE,
-              y: segTopY,
-              chapter: spec.chapter,
-              kind: curTx % 2 === 0 ? 'A' : 'B',
-            });
+            if ((spec.chapter === 1 || spec.chapter === 3) && curTx % 2 !== 0) {
+              // 所有蘑菇统一为真实可弹跳的弹簧蘑菇！
+              hazards.push({
+                type: 'spring',
+                x: curTx * TILE_SIZE + 2,
+                y: segTopY - 22,
+                w: 32,
+                h: 22,
+                bounceAnim: 0,
+              });
+            } else {
+              decorations.push({
+                x: curTx * TILE_SIZE,
+                y: segTopY,
+                chapter: spec.chapter,
+                kind: 'A',
+              });
+            }
           }
         }
 
@@ -324,12 +347,19 @@ window.NailongAdventure = window.NailongAdventure || {};
           const bStart = tx + 1;
           const bCount = 3 + (rng() > 0.5 ? 1 : 0);
           for (let b = 0; b < bCount; b++) {
-            const isSurprise = b === 1 || (b === 2 && bCount === 4 && rng() > 0.4);
+            const isSurprise = b === 1 || (b === 2 && bCount === 4 && rng() > 0.35);
             let itemKind = 'drumstick';
             if (isSurprise) {
-              if ((tx < 24 && b === 1) || rng() < 0.42) {
+              const rItem = rng();
+              if (tx < 24 && b === 1) {
                 itemKind = 'chili';
-              } else if (rng() < 0.72) {
+              } else if (rItem < 0.28) {
+                itemKind = 'chili';
+              } else if (rItem < 0.54) {
+                itemKind = 'atk_gem';
+              } else if (rItem < 0.78) {
+                itemKind = 'heart';
+              } else {
                 itemKind = 'potion';
               }
             }
@@ -340,7 +370,15 @@ window.NailongAdventure = window.NailongAdventure || {};
               w: TILE_SIZE,
               h: TILE_SIZE,
               type: isSurprise ? 'question' : 'brick',
-              item: isSurprise ? itemKind : rng() < 0.35 ? 'drumstick' : null,
+              item: isSurprise
+                ? itemKind
+                : rng() < 0.42
+                ? rng() < 0.35
+                  ? 'heart'
+                  : rng() < 0.65
+                  ? 'atk_gem'
+                  : 'drumstick'
+                : null,
               bumped: false,
               bumpOffset: 0,
             });
@@ -453,7 +491,7 @@ window.NailongAdventure = window.NailongAdventure || {};
     // 2. 放置 3 颗【黄金超级大鸡腿】(配备双层阶梯云台与高弹力弹簧蘑菇，清理周边空中砖块确保零重合！)
     goldenSpots.forEach((gtx, idx) => {
       const gx = gtx * TILE_SIZE;
-      // 清理 [gtx - 4, gtx + 3] 区间内任何可能冲突的空中砖块与普通鸡腿
+      // 清理 [gtx - 4, gtx + 3] 区间内任何可能冲突的空中砖块、普通鸡腿与地面装饰蘑菇/向日葵
       const minClearX = (gtx - 4) * TILE_SIZE;
       const maxClearX = (gtx + 3) * TILE_SIZE;
       for (let i = tiles.length - 1; i >= 0; i--) {
@@ -464,6 +502,12 @@ window.NailongAdventure = window.NailongAdventure || {};
           t.x < maxClearX
         ) {
           tiles.splice(i, 1);
+        }
+      }
+      for (let i = decorations.length - 1; i >= 0; i--) {
+        const d = decorations[i];
+        if (d.x + 36 > minClearX && d.x < maxClearX) {
+          decorations.splice(i, 1);
         }
       }
       for (let i = collectibles.length - 1; i >= 0; i--) {
@@ -482,24 +526,16 @@ window.NailongAdventure = window.NailongAdventure || {};
       }
 
       if (idx === 1) {
-        // 中段隐藏高空云朵秘境：下方放置弹簧蘑菇 + 中层踏板，高空铺设云朵长廊！
+        // 第 2 颗黄金鸡腿：中段隐藏高空云朵秘境 —— 撤掉中层跳板，必须踩下方【弹力蘑菇】一跃冲天才能上去！
         hazards.push({
           type: 'spring',
-          x: (gtx - 2) * TILE_SIZE + 2,
+          x: (gtx - 1) * TILE_SIZE + 2,
           y: localGroundY - 22,
           w: 32,
           h: 22,
           bounceAnim: 0,
         });
-        tiles.push({
-          tx: gtx - 3,
-          x: (gtx - 3) * TILE_SIZE,
-          y: Math.round(localGroundY - TILE_SIZE * 2.3),
-          w: TILE_SIZE * 2,
-          h: 20,
-          type: 'cloud_platform',
-        });
-        const highY = Math.round(localGroundY - TILE_SIZE * 4.4);
+        const highY = Math.round(localGroundY - TILE_SIZE * 4.8);
         for (let k = -1; k <= 2; k++) {
           tiles.push({
             tx: gtx + k,
@@ -508,8 +544,27 @@ window.NailongAdventure = window.NailongAdventure || {};
             w: TILE_SIZE,
             h: 20,
             type: 'cloud_platform',
+            mushroomOnly: true,
           });
-          if (k !== 0) {
+          if (k === -1) {
+            collectibles.push({
+              x: (gtx + k) * TILE_SIZE + 2,
+              y: highY - 38,
+              w: 32,
+              h: 32,
+              type: 'atk_gem',
+              collected: false,
+            });
+          } else if (k === 2) {
+            collectibles.push({
+              x: (gtx + k) * TILE_SIZE + 2,
+              y: highY - 38,
+              w: 32,
+              h: 32,
+              type: 'heart',
+              collected: false,
+            });
+          } else if (k !== 0) {
             collectibles.push({
               x: (gtx + k) * TILE_SIZE + 3,
               y: highY - 38,
@@ -529,8 +584,37 @@ window.NailongAdventure = window.NailongAdventure || {};
           goldenIndex: idx,
           collected: false,
         });
+      } else if (idx === 2) {
+        // 第 3 颗黄金鸡腿：关底前高空黄金云台 —— 必须借助下方【弹力蘑菇】弹射才能跳上去！
+        hazards.push({
+          type: 'spring',
+          x: (gtx - 1) * TILE_SIZE + 2,
+          y: localGroundY - 22,
+          w: 32,
+          h: 22,
+          bounceAnim: 0,
+        });
+        const highStepY = Math.round(localGroundY - TILE_SIZE * 4.6);
+        tiles.push({
+          tx: gtx,
+          x: gx - 12,
+          y: highStepY,
+          w: TILE_SIZE * 2 + 24,
+          h: 20,
+          type: 'cloud_platform',
+          mushroomOnly: true,
+        });
+        collectibles.push({
+          x: gx + 18,
+          y: highStepY - 42,
+          w: 36,
+          h: 36,
+          type: 'golden_drumstick',
+          goldenIndex: idx,
+          collected: false,
+        });
       } else {
-        // 第 1、3 颗黄金鸡腿：双层阶梯云朵平台（第1阶 2.2 格高，第2阶 4.0 格高，零砖块重叠！）
+        // 第 1 颗黄金鸡腿：双层阶梯云朵平台（第1阶 2.2 格高，第2阶 4.0 格高，零砖块重叠！）
         const step1Y = Math.round(localGroundY - TILE_SIZE * 2.2);
         const step2Y = Math.round(localGroundY - TILE_SIZE * 4.0);
         tiles.push({
@@ -935,12 +1019,12 @@ window.NailongAdventure = window.NailongAdventure || {};
         ctx.fillRect(sx, sy + Math.floor(t.h * 0.5), t.w, 2);
         ctx.fillRect(sx + Math.floor(t.w * 0.5), sy, 2, Math.floor(t.h * 0.5));
       } else if (t.type === 'cloud_platform') {
-        // 蓬松云朵单向/高空平台
-        ctx.fillStyle = '#FFFFFF';
+        // 蓬松云朵单向/高空平台（若为蘑菇专属高台，绘制醒目金黄边框）
+        ctx.fillStyle = t.mushroomOnly ? '#FEF9C3' : '#FFFFFF';
         ctx.fillRect(sx + 2, sy, t.w - 4, t.h);
-        ctx.fillStyle = '#E0F2FE';
+        ctx.fillStyle = t.mushroomOnly ? '#FDE047' : '#E0F2FE';
         ctx.fillRect(sx + 4, sy + t.h - 6, t.w - 8, 6);
-        ctx.strokeStyle = '#38BDF8';
+        ctx.strokeStyle = t.mushroomOnly ? '#F59E0B' : '#38BDF8';
         ctx.lineWidth = 2;
         ctx.strokeRect(sx + 2, sy, t.w - 4, t.h);
       } else if (t.type === 'ghost_bridge') {
