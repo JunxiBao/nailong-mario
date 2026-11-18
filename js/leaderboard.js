@@ -184,10 +184,12 @@ window.NailongAdventure = window.NailongAdventure || {};
     }
 
     /**
-     * 解锁下一章所需的当前章最低星数（每章 6 关满分 18 星，前四章需 8 颗星，后四章需 9 颗星）
+     * 解锁下一章所需的当前章最低星数（每章满分 18 星，后半程高难章节星级门槛逐步提高）
      */
     getRequiredStarsForNextChapter(chapterId) {
-      return chapterId >= 5 ? 9 : 8;
+      if (chapterId >= 6) return 12;
+      if (chapterId >= 4) return 11;
+      return 10;
     }
 
     /**

@@ -117,10 +117,10 @@ window.NailongAdventure = window.NailongAdventure || {};
         // 每 6.5 秒切换一次顺逆风向
         this.windDir = Math.sin(this.windPhaseTimer * 0.48) >= 0 ? 1 : -1;
         const gust = 0.65 + 0.35 * Math.sin(this.windPhaseTimer * 2.1);
-        this.windStrength = this.windDir * 195 * gust;
+        this.windStrength = this.windDir * 240 * gust;
       } else if (this.current === 'thunderstorm') {
         this.windDir = -1;
-        this.windStrength = -50;
+        this.windStrength = -65;
       } else {
         this.windStrength = 0;
       }
@@ -130,9 +130,9 @@ window.NailongAdventure = window.NailongAdventure || {};
         if (player.hasFire) {
           this.coldMeter = 0;
         } else if (Math.abs(player.vx) < 25 && player.onGround) {
-          this.coldMeter = Math.min(1, this.coldMeter + dt * 0.22);
+          this.coldMeter = Math.min(1, this.coldMeter + dt * 0.28);
         } else {
-          this.coldMeter = Math.max(0, this.coldMeter - dt * 0.52);
+          this.coldMeter = Math.max(0, this.coldMeter - dt * 0.45);
         }
       } else {
         this.coldMeter = Math.max(0, this.coldMeter - dt * 0.8);
@@ -146,14 +146,14 @@ window.NailongAdventure = window.NailongAdventure || {};
       if (this.current === 'thunderstorm' && player) {
         this.strikeCooldown -= dt;
         if (this.strikeCooldown <= 0) {
-          this.strikeCooldown = 4.4 + Math.random() * 2.2;
+          this.strikeCooldown = 3.6 + Math.random() * 2.2;
           // 在奶龙前方或附近生成地面落雷预警区
-          const targetX = player.x + (Math.random() * 220 - 65);
+          const targetX = player.x + (Math.random() * 220 - 70);
           this.lightningStrikes.push({
             x: Math.max(64, targetX),
-            w: 42,
-            warningTimer: 1.5, // 1.5秒地面闪烁红区预警
-            strikeTimer: 0.3, // 闪电持续时间
+            w: 44,
+            warningTimer: 1.35, // 1.35秒地面闪烁红区预警
+            strikeTimer: 0.32, // 闪电持续时间
             hitDone: false,
           });
         }

@@ -14,12 +14,12 @@ window.NailongAdventure = window.NailongAdventure || {};
 (function (ns) {
   'use strict';
 
-  const GRAVITY = 1180;
-  const MAX_FALL_SPEED = 660;
-  const BASE_RUN_SPEED = 258;
-  const JUMP_VELOCITY = -585;
-  const COYOTE_DURATION = 0.15;
-  const JUMP_BUFFER_DURATION = 0.15;
+  const GRAVITY = 1200;
+  const MAX_FALL_SPEED = 680;
+  const BASE_RUN_SPEED = 252;
+  const JUMP_VELOCITY = -565;
+  const COYOTE_DURATION = 0.11;
+  const JUMP_BUFFER_DURATION = 0.12;
 
   function aabbOverlap(a, b) {
     return (
@@ -90,8 +90,8 @@ window.NailongAdventure = window.NailongAdventure || {};
         coyoteTimer: 0,
         jumpBufferTimer: 0,
         jumpHeld: false,
-        hp: 4,
-        maxHp: 4,
+        hp: 5,
+        maxHp: 5,
         isBig: false, // 变大奶茶药水护盾（抵挡一次伤害）
         hasFire: false, // 红辣椒喷火形态
         atkBoostTimer: 0, // 狂暴龙晶双倍伤害计时器
@@ -136,30 +136,29 @@ window.NailongAdventure = window.NailongAdventure || {};
       if (!player || player.invincibleTimer > 0 || player.dead) return;
       if (ns.Audio) ns.Audio.playHurt();
 
-      // 优先消耗波波奶茶护盾，保留红辣椒喷火技能！
-      if (player.isBig) {
-        player.isBig = false;
-        player.invincibleTimer = 2.0;
-        player.hurtTimer = 0.35;
-        this.spawnFloatingText(player.x, player.y - 12, '奶茶护盾抵挡伤害!', '#10B981', 14);
-        this.spawnBurstParticles(player.x + 17, player.y + 22, '#52E09B', 12);
-        return;
-      }
-
       if (player.hasFire) {
         player.hasFire = false;
-        player.invincibleTimer = 2.0;
-        player.hurtTimer = 0.35;
+        player.invincibleTimer = 1.5;
+        player.hurtTimer = 0.4;
         this.spawnFloatingText(player.x, player.y - 12, '辣椒护体抵消伤害!', '#FF9800', 14);
         this.spawnBurstParticles(player.x + 17, player.y + 22, '#FF5722', 12);
         return;
       }
 
+      if (player.isBig) {
+        player.isBig = false;
+        player.invincibleTimer = 1.5;
+        player.hurtTimer = 0.4;
+        this.spawnFloatingText(player.x, player.y - 12, '奶茶护盾抵挡伤害!', '#4ADE80', 14);
+        this.spawnBurstParticles(player.x + 17, player.y + 22, '#52E09B', 12);
+        return;
+      }
+
       player.hp = Math.max(0, player.hp - 1);
-      player.invincibleTimer = 1.85;
-      player.hurtTimer = 0.42;
-      player.vy = -250;
-      player.vx = -player.facing * 130;
+      player.invincibleTimer = 1.65;
+      player.hurtTimer = 0.45;
+      player.vy = -260;
+      player.vx = -player.facing * 140;
       this.spawnBurstParticles(player.x + 17, player.y + 22, '#EF4444', 14);
       if (reason) {
         this.spawnFloatingText(player.x, player.y - 16, reason, '#FCA5A5', 13);
@@ -211,7 +210,7 @@ window.NailongAdventure = window.NailongAdventure || {};
             t.timer -= dt;
             if (t.timer <= 0) {
               t.state = 'gone';
-              t.timer = 1.5;
+              t.timer = 2.2;
             }
           } else if (t.state === 'gone') {
             t.timer -= dt;
@@ -349,7 +348,7 @@ window.NailongAdventure = window.NailongAdventure || {};
           player.surfaceType = t.type === 'ice' ? 'ice' : 'normal';
           if (t.type === 'ghost_bridge' && t.state === 'solid') {
             t.state = 'shaking';
-            t.timer = 1.05;
+            t.timer = 0.85;
           }
           if (t.type === 'normal' || t.type === 'ice') {
             player.safeX = player.x;
@@ -487,10 +486,10 @@ window.NailongAdventure = window.NailongAdventure || {};
             this.spawnBurstParticles(item.x + 16, item.y + 16, '#FB7185', 16);
             if (ns.Audio) ns.Audio.playPowerup();
           } else if (item.type === 'atk_gem') {
-            player.atkBoostTimer = 12.0;
+            player.atkBoostTimer = 10.0;
             player.hasFire = true;
             stateCallbacks.onAddScore(400);
-            this.spawnFloatingText(item.x, item.y - 10, '⚡狂暴龙晶: 攻击伤害x2 (12秒)!', '#F59E0B', 16);
+            this.spawnFloatingText(item.x, item.y - 10, '⚡狂暴龙晶: 攻击伤害x2 (10秒)!', '#F59E0B', 16);
             this.spawnBurstParticles(item.x + 16, item.y + 16, '#FBBF24', 18);
             if (ns.Audio) ns.Audio.playPowerup();
           }
@@ -503,7 +502,7 @@ window.NailongAdventure = window.NailongAdventure || {};
 
         if (hz.type === 'spring' || hz.type === 'pudding') {
           if (aabbOverlap(player, hz)) {
-            player.vy = hz.type === 'pudding' ? -800 : -790;
+            player.vy = hz.type === 'pudding' ? -780 : -760;
             player.onGround = false;
             hz.bounceAnim = 1.0;
             player.squashX = -0.18;
@@ -679,37 +678,37 @@ window.NailongAdventure = window.NailongAdventure || {};
         const distToPlayerY = Math.abs(player.y - en.y);
         const dirToPlayer = player.x < en.x ? -1 : 1;
 
-        // 小紫兵主动索敌与主动攻击 AI（适度挑战性）
+        // 小紫兵主动索敌与主动攻击 AI（投掷紫晶小炸弹 / 弹簧飞扑 + 能量刺）
         if (en.type === 'minion' || en.type === 'minion_helmet') {
-          en.aggro = distToPlayerX < 290 && distToPlayerY < 140;
+          en.aggro = distToPlayerX < 350 && distToPlayerY < 150;
 
           if (en.aggro) {
-            // 朝向奶龙逼近
+            // 朝向奶龙加速逼近
             en.vx = dirToPlayer * Math.abs(en.vx);
-            en.attackCooldown = (en.attackCooldown ?? 0.75) - dt;
+            en.attackCooldown = (en.attackCooldown ?? 0.45) - dt;
             if (en.attackCooldown <= 0) {
-              en.attackCooldown = en.type === 'minion_helmet' ? 2.0 : 2.25;
-              en.attackTimer = 0.38;
+              en.attackCooldown = en.type === 'minion_helmet' ? 1.55 : 1.75;
+              en.attackTimer = 0.4;
 
               if (en.type === 'minion_helmet') {
-                // 独眼弹簧铁帽小紫兵：弹簧突袭起跳 + 发射水平紫晶尖刺弹
-                if (en.onGround) en.vy = -295;
+                // 独眼弹簧铁帽小紫兵：弹簧突袭起跳 + 发射水平紫晶尖刺弹！
+                if (en.onGround) en.vy = -330;
                 this.enemyProjectiles.push({
                   kind: 'bolt',
                   x: dirToPlayer > 0 ? en.x + en.w : en.x - 14,
                   y: en.y + en.h * 0.45,
                   w: 14,
                   h: 10,
-                  vx: dirToPlayer * 205,
+                  vx: dirToPlayer * 235,
                   vy: 0,
                   hasGravity: false,
-                  life: 1.7,
+                  life: 1.9,
                 });
                 this.spawnFloatingText(en.x, en.y - 12, '👾铁帽尖刺射击!', '#F472B6', 12);
               } else {
-                // 双丸头带小紫兵：小跳并向奶龙投掷抛物线紫晶小炸弹 (bomb)
-                if (en.onGround) en.vy = -195;
-                const throwVx = dirToPlayer * Math.min(210, Math.max(105, distToPlayerX * 0.8));
+                // 双丸头带小紫兵：小跳并向奶龙投掷抛物线紫晶小炸弹 (bomb)！
+                if (en.onGround) en.vy = -210;
+                const throwVx = dirToPlayer * Math.min(240, Math.max(110, distToPlayerX * 0.85));
                 this.enemyProjectiles.push({
                   kind: 'bomb',
                   x: en.x + en.w * 0.5 - 7,
@@ -717,11 +716,11 @@ window.NailongAdventure = window.NailongAdventure || {};
                   w: 14,
                   h: 14,
                   vx: throwVx,
-                  vy: -295,
+                  vy: -310,
                   hasGravity: true,
                   bounces: 0,
                   groundY: supportY,
-                  life: 2.0,
+                  life: 2.2,
                 });
                 this.spawnFloatingText(en.x, en.y - 12, '💣紫兵投弹!', '#C084FC', 12);
               }
@@ -730,7 +729,7 @@ window.NailongAdventure = window.NailongAdventure || {};
         }
 
         // 巡逻与冲锋移动
-        const speedMult = en.charging ? 1.65 : en.isRage ? 1.3 : en.aggro ? 1.22 : 1.0;
+        const speedMult = en.charging ? 1.85 : en.isRage ? 1.4 : en.aggro ? 1.35 : 1.0;
         en.x += en.vx * speedMult * dt;
         if (en.x <= en.patrolMin) {
           en.x = en.patrolMin;
@@ -742,25 +741,25 @@ window.NailongAdventure = window.NailongAdventure || {};
           en.charging = false;
         }
 
-        // 暴暴龙专属技能：周期性蓄力冲撞 + 发射紫色能量球
+        // 暴暴龙专属技能：周期性蓄力冲撞 + 发射紫色能量球 + 第30关终极机甲三阶段模式
         if (en.type === 'boss' || en.type === 'final_boss') {
           if (en.hp <= Math.ceil(en.maxHp * 0.5)) {
             en.isRage = true;
           }
-          if (distToPlayerX < 470) {
+          if (distToPlayerX < 500) {
             en.shootCooldown -= dt;
             if (en.shootCooldown <= 0) {
-              en.shootCooldown = en.isRage ? 1.9 : 2.6;
+              en.shootCooldown = en.isRage ? 1.65 : 2.3;
               en.attackTimer = 0.45;
               en.vx = dirToPlayer * Math.abs(en.vx);
               if (ns.Audio) ns.Audio.playBossAttack();
 
-              // 发射紫色等离子能量球（终极Boss狂暴阶段发射扇形双弹/三连弹）
+              // 发射紫色等离子能量球（终极Boss狂暴阶段发射扇形双弹/三连弹！）
               const angles =
                 en.type === 'final_boss' && en.isRage
                   ? level.chapter >= 8
-                    ? [-0.2, 0, 0.16]
-                    : [-0.16, 0.05]
+                    ? [-0.24, 0, 0.2]
+                    : [-0.18, 0.05]
                   : [0];
               for (const ang of angles) {
                 this.enemyProjectiles.push({
@@ -769,47 +768,48 @@ window.NailongAdventure = window.NailongAdventure || {};
                   y: en.y + en.h * 0.42,
                   w: 16,
                   h: 16,
-                  vx: Math.cos(ang) * dirToPlayer * ((en.isRage ? 245 : 205) + Math.max(0, level.chapter - 5) * 10),
-                  vy: Math.sin(ang) * 200,
+                  vx: Math.cos(ang) * dirToPlayer * ((en.isRage ? 275 : 230) + Math.max(0, level.chapter - 5) * 18),
+                  vy: Math.sin(ang) * 220,
                   hasGravity: false,
-                  life: 2.5,
+                  life: 2.6,
                 });
               }
             }
 
             en.chargeCooldown -= dt;
             if (en.chargeCooldown <= 0) {
-              en.chargeCooldown = en.isRage ? 3.5 : 4.6;
+              en.chargeCooldown = en.isRage ? 3.2 : 4.4;
               en.charging = true;
               en.vx = dirToPlayer * Math.abs(en.vx);
               if (en.type === 'final_boss' && en.onGround) {
-                en.vy = -390;
+                // 终极机甲高空喷气跳跃泰山压顶！
+                en.vy = -420;
               }
               this.spawnFloatingText(en.x, en.y - 14, '⚡暴暴龙冲撞!', '#C084FC', 14);
             }
           }
         }
 
-        // 与奶龙碰撞检测：从上方踩踏 vs 侧面受击（放宽踩踏判定高度）
+        // 与奶龙碰撞检测：从上方踩踏 vs 侧面受击
         if (aabbOverlap(player, en)) {
-          const isStomp = player.vy > 0 && prevBottom <= en.y + Math.max(26, en.h * 0.65);
+          const isStomp = player.vy > 0 && prevBottom <= en.y + Math.max(20, en.h * 0.52);
           if (isStomp) {
             if (en.type === 'minion_helmet') {
-              // 独眼弹簧铁帽小紫兵头顶有尖刺不可直接踩踏，会扎伤扣血并弹开奶龙！
-              player.vy = -400;
+              // 独眼弹簧铁帽小紫兵不可直接用脚踩碎，会弹开奶龙并提示使用火球！
+              player.vy = -380;
               this.damagePlayer(player, '铁帽尖刺扎脚！请用红辣椒火球(J/Z)击败它！');
             } else {
               // 踩踏成功！触发连击翻倍与弹起（若处于狂暴龙晶状态，踩踏伤害 x2！）
               player.airCombo = (player.airCombo || 0) + 1;
               const comboMult = Math.min(8, Math.pow(2, player.airCombo - 1));
               const stompDmg = player.atkBoostTimer > 0 ? 2 : 1;
-              player.vy = input.jumpHeld ? -530 : -440;
+              player.vy = input.jumpHeld ? -510 : -420;
               player.squashX = -0.15;
               player.squashY = 0.18;
               this._damageEnemy(en, stompDmg, player, stateCallbacks, false, comboMult);
             }
           } else if (en.hurtTimer <= 0) {
-            this.damagePlayer(player, en.type.includes('minion') ? '被小紫兵撞到啦！' : '被暴暴龙撞击！');
+            this.damagePlayer(player, en.type.includes('minion') ? '被小紫兵主动冲撞咬伤啦！' : '被暴暴龙猛烈撞击！');
           }
         }
       }
