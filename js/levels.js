@@ -131,63 +131,63 @@ window.NailongAdventure = window.NailongAdventure || {};
     { id: 3, chapter: 1, name: '微风蘑菇谷', weather: 'windy', lengthTiles: 82, tip: '大风天会有顺风/逆风推力！顶出【红辣椒】后按 J 或 Z 键可吐出像素火球！' },
     { id: 4, chapter: 1, name: '春雨云朵桥', weather: 'rainy', lengthTiles: 86, tip: '雨天地面略滑，利用弹簧蘑菇跳上高空隐藏云朵通道，奖励大量烤鸡腿！' },
     { id: 5, chapter: 1, name: '蜜蜂花田阵', weather: 'sunny', lengthTiles: 90, tip: '注意头顶带金属尖刺的独眼小紫兵不可直接踩踏，请用辣椒火球击败或跳过它！' },
-    { id: 6, chapter: 1, name: '平原守卫：初遇暴暴龙', weather: 'sunny', lengthTiles: 84, isBoss: true, bossHp: 3, tip: '【小Boss战】暴暴龙出现！躲避它的冲撞与能量球，踩踏头部 3 次或用火球击败它！' },
+    { id: 6, chapter: 1, name: '平原守卫：初遇暴暴龙', weather: 'sunny', lengthTiles: 80, isBoss: true, bossHp: 2, tip: '【小Boss战】暴暴龙出现！躲避它的冲撞与能量球，踩踏头部 2 次或用火球击败它！' },
 
     // 第二章：甜蜜糖果沙漠 (7 - 12)
-    { id: 7, chapter: 2, name: '焦糖饼干沙丘', weather: 'sunny', lengthTiles: 88, tip: '踏入糖果沙漠！踩在焦糖流沙上会缓慢下沉，快连按跳跃键脱身！' },
-    { id: 8, chapter: 2, name: '弹跳布丁绿洲', weather: 'sunny', lengthTiles: 92, tip: '粉嫩的果冻布丁平台拥有超强弹力，借助它飞跃仙人掌尖刺阵！' },
-    { id: 9, chapter: 2, name: '狂风沙尘暴', weather: 'windy', lengthTiles: 95, tip: '沙漠强风来袭！逆风起跳要留足提前量，顺风大跳可直达高空黄金鸡腿台！' },
-    { id: 10, chapter: 2, name: '巧克力迷宫', weather: 'sunny', lengthTiles: 98, tip: '击碎多层巧克力砖块寻找隐藏的【变大波波奶茶】与秘密鸡腿宝库！' },
-    { id: 11, chapter: 2, name: '烈日流沙河', weather: 'windy', lengthTiles: 102, tip: '流沙河与移动云朵交替出现，保持节奏切勿久留！' },
-    { id: 12, chapter: 2, name: '沙漠霸主：暴暴龙突袭', weather: 'windy', lengthTiles: 90, isBoss: true, bossHp: 4, tip: '【章节Boss战】暴暴龙在流沙与布丁竞技场发起冲锋，利用布丁垫高跳反击！' },
+    { id: 7, chapter: 2, name: '焦糖饼干沙丘', weather: 'sunny', lengthTiles: 82, tip: '踏入糖果沙漠！踩在焦糖流沙上会缓慢下沉，快连按跳跃键脱身！' },
+    { id: 8, chapter: 2, name: '弹跳布丁绿洲', weather: 'sunny', lengthTiles: 84, tip: '粉嫩的果冻布丁平台拥有超强弹力，借助它飞跃仙人掌尖刺阵！' },
+    { id: 9, chapter: 2, name: '狂风沙尘暴', weather: 'windy', lengthTiles: 86, tip: '沙漠强风来袭！逆风起跳要留足提前量，顺风大跳可直达高空黄金鸡腿台！' },
+    { id: 10, chapter: 2, name: '巧克力迷宫', weather: 'sunny', lengthTiles: 88, tip: '击碎多层巧克力砖块寻找隐藏的【变大波波奶茶】与秘密鸡腿宝库！' },
+    { id: 11, chapter: 2, name: '烈日流沙河', weather: 'windy', lengthTiles: 90, tip: '流沙河与移动云朵交替出现，保持节奏切勿久留！' },
+    { id: 12, chapter: 2, name: '沙漠霸主：暴暴龙突袭', weather: 'windy', lengthTiles: 84, isBoss: true, bossHp: 3, tip: '【章节Boss战】暴暴龙在流沙与布丁竞技场发起冲锋，利用布丁垫高跳反击！' },
 
     // 第三章：迷雾幽暗森林 (13 - 18)
-    { id: 13, chapter: 3, name: '萤火暮光林', weather: 'rainy', lengthTiles: 94, hasFog: true, tip: '进入迷雾森林，视野受限！吃下红辣椒或靠近发光蘑菇可照亮周围视野！' },
-    { id: 14, chapter: 3, name: '幽灵木桥涧', weather: 'rainy', lengthTiles: 98, hasFog: true, tip: '紫色幽灵木桥踩上 0.9 秒后会暂时消失，看准时机快速通过！' },
-    { id: 15, chapter: 3, name: '古树灌木伏击', weather: 'windy', lengthTiles: 102, hasFog: true, tip: '当心晃动的深绿树丛！靠近时会有埋伏的小紫兵从树丛里窜出突袭！' },
-    { id: 16, chapter: 3, name: '雷鸣蘑菇夜', weather: 'thunderstorm', lengthTiles: 105, hasFog: true, tip: '雷暴天气！闪电会瞬间照亮森林，但千万避开地面的红色落雷预警光柱！' },
-    { id: 17, chapter: 3, name: '迷失幻影径', weather: 'thunderstorm', lengthTiles: 108, hasFog: true, tip: '幽灵桥与树丛伏兵交错，善用土狼时间与预输入跳跃丝滑闯关！' },
-    { id: 18, chapter: 3, name: '密林暗影：雷霆暴暴龙', weather: 'thunderstorm', lengthTiles: 94, hasFog: true, isBoss: true, bossHp: 5, tip: '【章节Boss战】在雷暴与幽灵桥竞技场迎战暴暴龙，借闪电亮光精准踩击！' },
+    { id: 13, chapter: 3, name: '萤火暮光林', weather: 'rainy', lengthTiles: 86, hasFog: true, tip: '进入迷雾森林，视野受限！吃下红辣椒或靠近发光蘑菇可照亮周围视野！' },
+    { id: 14, chapter: 3, name: '幽灵木桥涧', weather: 'rainy', lengthTiles: 88, hasFog: true, tip: '紫色幽灵木桥踩上后会缓慢闪烁消失，看准时机通过！' },
+    { id: 15, chapter: 3, name: '古树灌木伏击', weather: 'windy', lengthTiles: 90, hasFog: true, tip: '当心晃动的深绿树丛！靠近时会有埋伏的小紫兵从树丛里窜出突袭！' },
+    { id: 16, chapter: 3, name: '雷鸣蘑菇夜', weather: 'thunderstorm', lengthTiles: 92, hasFog: true, tip: '雷暴天气！闪电会瞬间照亮森林，注意避开地面的红色落雷预警光柱！' },
+    { id: 17, chapter: 3, name: '迷失幻影径', weather: 'thunderstorm', lengthTiles: 94, hasFog: true, tip: '幽灵桥与树丛伏兵交错，善用土狼时间与预输入跳跃丝滑闯关！' },
+    { id: 18, chapter: 3, name: '密林暗影：雷霆暴暴龙', weather: 'thunderstorm', lengthTiles: 88, hasFog: true, isBoss: true, bossHp: 3, tip: '【章节Boss战】在雷暴与幽灵桥竞技场迎战暴暴龙，借闪电亮光精准踩击！' },
 
     // 第四章：极寒冰雪山巅 (19 - 24)
-    { id: 19, chapter: 4, name: '极光滑冰场', weather: 'snowy', lengthTiles: 96, isIce: true, tip: '冰面摩擦力极低，刹车会有惯性滑行！吃下红辣椒可免疫暴雪寒冷减速！' },
-    { id: 20, chapter: 4, name: '冰锥惊魂谷', weather: 'snowy', lengthTiles: 100, isIce: true, tip: '抬头看！经过悬挂的尖锐冰锥下方时，冰锥会震动坠落，快速冲刺通过！' },
-    { id: 21, chapter: 4, name: '暴风雪浮冰', weather: 'windy', lengthTiles: 104, isIce: true, tip: '寒风配合滑溜冰面，在移动浮冰上稳住重心收集黄金鸡腿！' },
-    { id: 22, chapter: 4, name: '寒晶秘密洞窟', weather: 'snowy', lengthTiles: 108, isIce: true, tip: '冰川高处藏着秘密补给平台，用弹簧垫飞跃连续冰锥区！' },
-    { id: 23, chapter: 4, name: '绝顶冰封脊', weather: 'snowy', lengthTiles: 112, isIce: true, tip: '登顶前的严酷考验：冰面滑行 + 坠落冰锥 + 装甲小紫兵军团！' },
-    { id: 24, chapter: 4, name: '冰巅对决：急冻暴暴龙', weather: 'snowy', lengthTiles: 96, isIce: true, isBoss: true, bossHp: 6, tip: '【章节Boss战】冰面上的暴暴龙冲撞速度更快，注意头顶还会震落冰锥！' },
+    { id: 19, chapter: 4, name: '极光滑冰场', weather: 'snowy', lengthTiles: 88, isIce: true, tip: '冰面摩擦力较低，刹车会有惯性滑行！吃下红辣椒可免疫暴雪寒冷减速！' },
+    { id: 20, chapter: 4, name: '冰锥惊魂谷', weather: 'snowy', lengthTiles: 90, isIce: true, tip: '抬头看！经过悬挂的尖锐冰锥下方时，冰锥会震动坠落，快速冲刺通过！' },
+    { id: 21, chapter: 4, name: '暴风雪浮冰', weather: 'windy', lengthTiles: 92, isIce: true, tip: '寒风配合滑溜冰面，在移动浮冰上稳住重心收集黄金鸡腿！' },
+    { id: 22, chapter: 4, name: '寒晶秘密洞窟', weather: 'snowy', lengthTiles: 94, isIce: true, tip: '冰川高处藏着秘密补给平台，用弹簧垫飞跃连续冰锥区！' },
+    { id: 23, chapter: 4, name: '绝顶冰封脊', weather: 'snowy', lengthTiles: 96, isIce: true, tip: '登顶前的考验：冰面滑行 + 坠落冰锥 + 小紫兵巡逻队！' },
+    { id: 24, chapter: 4, name: '冰巅对决：急冻暴暴龙', weather: 'snowy', lengthTiles: 90, isIce: true, isBoss: true, bossHp: 4, tip: '【章节Boss战】冰面上的暴暴龙冲撞速度更快，善用两侧补给砖块反击！' },
 
     // 第五章：暴暴龙熔岩城堡 (25 - 30)
-    { id: 25, chapter: 5, name: '熔岩吊桥门', weather: 'Sunny', lengthTiles: 102, tip: '闯入暴暴龙熔岩要塞！小心翻滚的像素岩浆池与周期性喷涌的火柱！' },
-    { id: 26, chapter: 5, name: '烈焰旋转回廊', weather: 'thunderstorm', lengthTiles: 106, tip: '观察旋转火棒的顺时针轨迹，跟随空隙稳步跳跃前进！' },
-    { id: 27, chapter: 5, name: '升降铁链熔炉', weather: 'rainy', lengthTiles: 110, tip: '搭乘上下升降的合金平台跨越宽阔岩浆海，切勿贪刀！' },
-    { id: 28, chapter: 5, name: '狂雷赤焰长廊', weather: 'thunderstorm', lengthTiles: 114, tip: '雷暴与旋转火棒双重封锁，备好波波奶茶护盾与红辣椒火球开路！' },
-    { id: 29, chapter: 5, name: '王座前哨战', weather: 'thunderstorm', lengthTiles: 118, tip: '突破熔岩要塞防线，直抵暴暴龙机甲王座！' },
-    { id: 30, chapter: 5, name: '熔岩决战：重装机甲暴暴龙', weather: 'thunderstorm', lengthTiles: 96, isBoss: true, isFinalBoss: true, bossHp: 9, tip: '【第五章Boss战】暴暴龙启动熔岩重装机甲！击败它开启通往赛博机械城的时空传送门！' },
+    { id: 25, chapter: 5, name: '熔岩吊桥门', weather: 'sunny', lengthTiles: 92, tip: '闯入暴暴龙熔岩要塞！小心翻滚的像素岩浆池，借助移动平台稳步前进！' },
+    { id: 26, chapter: 5, name: '烈焰旋转回廊', weather: 'thunderstorm', lengthTiles: 94, tip: '观察旋转火棒的轨迹，跟随空隙跳跃前进！' },
+    { id: 27, chapter: 5, name: '升降铁链熔炉', weather: 'rainy', lengthTiles: 96, tip: '搭乘上下升降的合金平台跨越宽阔岩浆海，切勿心急！' },
+    { id: 28, chapter: 5, name: '狂雷赤焰长廊', weather: 'thunderstorm', lengthTiles: 98, tip: '雷暴与旋转火棒封锁，备好波波奶茶护盾与红辣椒火球开路！' },
+    { id: 29, chapter: 5, name: '王座前哨战', weather: 'thunderstorm', lengthTiles: 100, tip: '突破熔岩要塞防线，直抵暴暴龙机甲王座！' },
+    { id: 30, chapter: 5, name: '熔岩决战：重装机甲暴暴龙', weather: 'thunderstorm', lengthTiles: 90, isBoss: true, isFinalBoss: true, bossHp: 5, tip: '【第五章Boss战】暴暴龙启动熔岩重装机甲！击败它开启通往赛博机械城的时空传送门！' },
 
-    // 第六章：赛博霓虹机械城 (31 - 36) —— 高速旋转激光、冰滑赛博装甲板、密集铁帽紫兵
-    { id: 31, chapter: 6, name: '霓虹数据大道', weather: 'rainy', lengthTiles: 118, tip: '进入第六章赛博机械城！酸雨让金属路面湿滑，小心高速巡逻的铁帽紫兵！' },
-    { id: 32, chapter: 6, name: '激光矩阵回廊', weather: 'windy', lengthTiles: 122, tip: '高能旋转激光棒速度大幅提升！善用狂暴龙晶双倍火球清扫前方障碍！' },
-    { id: 33, chapter: 6, name: '超导磁悬浮桥', weather: 'snowy', lengthTiles: 125, isIce: true, tip: '超导冷却路面摩擦力极低，配合弹簧蘑菇精准跃上高空黄金鸡腿台！' },
-    { id: 34, chapter: 6, name: '全息迷雾机房', weather: 'thunderstorm', lengthTiles: 128, hasFog: true, tip: '全息黑客迷雾遮蔽视野，同时提防电磁落雷与暗处突袭的装甲紫兵！' },
-    { id: 35, chapter: 6, name: '核心反应堆长廊', weather: 'thunderstorm', lengthTiles: 132, tip: '连续升降合金台与高速旋转火棒交错，考验极限微操！' },
-    { id: 36, chapter: 6, name: '机械城主：赛博机甲暴暴龙', weather: 'thunderstorm', lengthTiles: 100, isBoss: true, isFinalBoss: true, bossHp: 11, tip: '【第六章Boss战】11血赛博超频机甲暴暴龙！弹幕与冲撞速度提升30%，拾取狂暴龙晶反击！' },
+    // 第六章：赛博霓虹机械城 (31 - 36)
+    { id: 31, chapter: 6, name: '霓虹数据大道', weather: 'rainy', lengthTiles: 96, tip: '进入第六章赛博机械城！酸雨让金属路面微滑，顶开问号砖拿狂暴龙晶开路！' },
+    { id: 32, chapter: 6, name: '激光矩阵回廊', weather: 'windy', lengthTiles: 98, tip: '善用狂暴龙晶双倍火球清扫前方障碍！' },
+    { id: 33, chapter: 6, name: '超导磁悬浮桥', weather: 'snowy', lengthTiles: 100, isIce: true, tip: '超导冷却路面配合弹簧蘑菇，跃上高空黄金鸡腿台！' },
+    { id: 34, chapter: 6, name: '全息迷雾机房', weather: 'thunderstorm', lengthTiles: 102, hasFog: true, tip: '全息迷雾遮蔽视野，吃下红辣椒可扩大视野光圈！' },
+    { id: 35, chapter: 6, name: '核心反应堆长廊', weather: 'thunderstorm', lengthTiles: 104, tip: '连续升降合金台与旋转火棒交错，稳扎稳打！' },
+    { id: 36, chapter: 6, name: '机械城主：赛博机甲暴暴龙', weather: 'thunderstorm', lengthTiles: 92, isBoss: true, isFinalBoss: true, bossHp: 6, tip: '【第六章Boss战】赛博超频机甲暴暴龙！拾取竞技场内的狂暴龙晶双倍伤害反击！' },
 
-    // 第七章：云端雷霆神殿 (37 - 42) —— 狂风+天雷+极速幽灵桥+坠落冰锥复合高难关卡
-    { id: 37, chapter: 7, name: '万米雷云阶梯', weather: 'windy', lengthTiles: 128, tip: '踏入第七章云端雷霆神殿！高空罡风强劲，注意空中跳跃提前量！' },
-    { id: 38, chapter: 7, name: '幻影浮桥圣殿', weather: 'thunderstorm', lengthTiles: 132, tip: '神殿幽灵浮桥与天雷预警同时触发，切勿在同一块浮桥上停留超过0.7秒！' },
-    { id: 39, chapter: 7, name: '罡风天雷走廊', weather: 'windy', lengthTiles: 136, isIce: true, tip: '光滑云母石面 + 高空强风 + 悬空坠落冰柱，步步惊心！' },
-    { id: 40, chapter: 7, name: '雷神试炼密室', weather: 'thunderstorm', lengthTiles: 140, hasFog: true, tip: '雷云夜幕笼罩神殿，借助红辣椒光圈与闪电亮光穿越连续机关区！' },
-    { id: 41, chapter: 7, name: '苍穹圣域之巅', weather: 'thunderstorm', lengthTiles: 144, tip: '通往星际虚空前的最高密度紫兵精英防线，保持连击 Combo！' },
-    { id: 42, chapter: 7, name: '神殿裁决：雷神机甲暴暴龙', weather: 'thunderstorm', lengthTiles: 104, isBoss: true, isFinalBoss: true, bossHp: 13, tip: '【第七章Boss战】13血雷神机甲暴暴龙！在雷暴与高空竞技场展开巅峰对决！' },
+    // 第七章：云端雷霆神殿 (37 - 42)
+    { id: 37, chapter: 7, name: '万米雷云阶梯', weather: 'windy', lengthTiles: 100, tip: '踏入第七章云端雷霆神殿！乘风大跳跨越云海！' },
+    { id: 38, chapter: 7, name: '幻影浮桥圣殿', weather: 'thunderstorm', lengthTiles: 102, tip: '神殿幽灵浮桥踩上后会闪烁，保持移动节奏通过！' },
+    { id: 39, chapter: 7, name: '罡风天雷走廊', weather: 'windy', lengthTiles: 104, isIce: true, tip: '光滑云母石面配合弹簧蘑菇，收集沿途蜜桃回血果补满状态！' },
+    { id: 40, chapter: 7, name: '雷神试炼密室', weather: 'thunderstorm', lengthTiles: 106, hasFog: true, tip: '借助红辣椒光圈与闪电亮光穿越神殿回廊！' },
+    { id: 41, chapter: 7, name: '苍穹圣域之巅', weather: 'thunderstorm', lengthTiles: 108, tip: '通往星际虚空前的试炼，保持连击 Combo！' },
+    { id: 42, chapter: 7, name: '神殿裁决：雷神机甲暴暴龙', weather: 'thunderstorm', lengthTiles: 94, isBoss: true, isFinalBoss: true, bossHp: 7, tip: '【第七章Boss战】雷神机甲暴暴龙！在云端竞技场展开对决！' },
 
-    // 第八章：星际虚空终焉要塞 (43 - 48) —— 全章节地狱难度复合机关 + 终极16血大帝决战
-    { id: 43, chapter: 8, name: '星际折跃边缘', weather: 'windy', lengthTiles: 138, isIce: true, tip: '最终章：星际虚空要塞！低摩擦星舰甲板与虚空强风双重考验！' },
-    { id: 44, chapter: 8, name: '黑洞引力裂谷', weather: 'thunderstorm', lengthTiles: 142, hasFog: true, tip: '虚空暗雾与高频能量火棒封锁，看准升降平台节奏一气呵成！' },
-    { id: 45, chapter: 8, name: '新星爆裂回廊', weather: 'thunderstorm', lengthTiles: 146, tip: '超长距离高难关卡！合理储备波波奶茶护盾、蜜桃回血果与狂暴龙晶！' },
-    { id: 46, chapter: 8, name: '零度星尘绝壁', weather: 'snowy', lengthTiles: 150, isIce: true, tip: '极寒星尘冰面 + 密集坠落陨冰 + 反向旋转双火棒，硬核平台跳跃试炼！' },
-    { id: 47, chapter: 8, name: '帝国舰桥前哨', weather: 'thunderstorm', lengthTiles: 155, hasFog: true, tip: '决战前的最长远征（155格）！突破双暴暴龙先锋的联合封锁！' },
-    { id: 48, chapter: 8, name: '终焉决战：宇宙机甲暴暴龙大帝', weather: 'thunderstorm', lengthTiles: 108, isBoss: true, isFinalBoss: true, bossHp: 16, tip: '【全游戏终极Boss战】16血宇宙毁灭机甲·暴暴龙大帝！高频三连扇形等离子炮+狂暴泰山压顶，夺回宇宙终极金鸡腿！' },
+    // 第八章：星际虚空终焉要塞 (43 - 48)
+    { id: 43, chapter: 8, name: '星际折跃边缘', weather: 'windy', lengthTiles: 104, isIce: true, tip: '最终章：星际虚空要塞！利用低摩擦星舰甲板滑行加速！' },
+    { id: 44, chapter: 8, name: '黑洞引力裂谷', weather: 'thunderstorm', lengthTiles: 106, hasFog: true, tip: '看准升降平台节奏跨越虚空裂谷！' },
+    { id: 45, chapter: 8, name: '新星爆裂回廊', weather: 'thunderstorm', lengthTiles: 108, tip: '沿途问号砖富含蜜桃回血果、波波奶茶护盾与狂暴龙晶！' },
+    { id: 46, chapter: 8, name: '零度星尘绝壁', weather: 'snowy', lengthTiles: 110, isIce: true, tip: '星尘冰面配合弹力蘑菇，冲刺高空秘境！' },
+    { id: 47, chapter: 8, name: '帝国舰桥前哨', weather: 'thunderstorm', lengthTiles: 112, hasFog: true, tip: '决战前的最后前哨，备足护盾与双倍火球！' },
+    { id: 48, chapter: 8, name: '终焉决战：宇宙机甲暴暴龙大帝', weather: 'thunderstorm', lengthTiles: 96, isBoss: true, isFinalBoss: true, bossHp: 8, tip: '【全游戏终极Boss战】宇宙毁灭机甲·暴暴龙大帝！利用竞技场双补给箱与狂暴龙晶击败它，夺回宇宙终极金鸡腿！' },
   ];
 
   // 伪随机数发生器（确保每一关地形固定、可背板、30关各具特色且100%可通关）
@@ -524,35 +524,22 @@ window.NailongAdventure = window.NailongAdventure || {};
               h: TILE_SIZE,
               type: 'steel',
             });
-            const barSpeed = (1.8 + Math.max(0, levelId - 25) * 0.08) * (rng() > 0.5 ? 1 : -1);
+            const barSpeed = (1.15 + Math.max(0, levelId - 25) * 0.025) * (rng() > 0.5 ? 1 : -1);
             hazards.push({
               type: 'firebar',
               x: pivotX,
               y: pivotY,
-              length: spec.chapter >= 6 ? 86 : 76,
+              length: 64,
               angle: rng() * Math.PI * 2,
               speed: barSpeed,
             });
-            // 第7~8章高难特色：双十字交叉旋转火棒！
-            if (spec.chapter >= 7) {
-              hazards.push({
-                type: 'firebar',
-                x: pivotX,
-                y: pivotY,
-                length: 84,
-                angle: rng() * Math.PI * 2 + Math.PI,
-                speed: barSpeed,
-              });
-            }
-          } else {
+          } else if (rng() < 0.72) {
             const isHelmet =
-              (levelId >= 1 && tx > 36 && rng() < 0.35) ||
-              (levelId >= 3 && rng() < Math.min(0.82, 0.28 + spec.chapter * 0.07));
+              levelId >= 4 && rng() < Math.min(0.42, 0.15 + spec.chapter * 0.035);
             const minX = (tx + 0.3) * TILE_SIZE;
             const maxX = Math.min(bossArenaStart - 1, tx + segLen - 0.3) * TILE_SIZE;
             if (maxX - minX >= TILE_SIZE * 2) {
-              const spdBoost = 1 + Math.max(0, spec.chapter - 1) * 0.08;
-              const cdFactor = Math.max(0.55, 1 - (spec.chapter - 1) * 0.06);
+              const spdBoost = 1 + Math.max(0, spec.chapter - 1) * 0.03;
               enemies.push({
                 type: isHelmet ? 'minion_helmet' : 'minion',
                 x: midTx * TILE_SIZE,
@@ -560,14 +547,14 @@ window.NailongAdventure = window.NailongAdventure || {};
                 groundTopY: segTopY,
                 w: 34,
                 h: 38,
-                vx: Math.round((isHelmet ? 78 : 68) * spdBoost) * (rng() > 0.5 ? 1 : -1),
+                vx: Math.round((isHelmet ? 58 : 52) * spdBoost) * (rng() > 0.5 ? 1 : -1),
                 vy: 0,
-                hp: spec.chapter >= 7 && isHelmet ? 2 : 1,
-                maxHp: spec.chapter >= 7 && isHelmet ? 2 : 1,
+                hp: 1,
+                maxHp: 1,
                 patrolMin: minX,
                 patrolMax: maxX,
-                attackCooldown: (0.35 + rng() * 0.35) * cdFactor,
-                jumpCooldown: (1.2 + rng() * 0.8) * cdFactor,
+                attackCooldown: 1.2 + rng() * 0.9,
+                jumpCooldown: 1.8 + rng() * 0.8,
                 aggro: false,
                 squashed: false,
                 squashTimer: 0,
@@ -618,7 +605,7 @@ window.NailongAdventure = window.NailongAdventure || {};
       }
 
       if (idx === 1) {
-        // 第 2 颗黄金鸡腿：中段隐藏高空云朵秘境 —— 撤掉中层跳板，必须踩下方【弹力蘑菇】一跃冲天才能上去！
+        // 第 2 颗黄金鸡腿：中段隐藏高空云朵秘境 —— 借助下方【弹力蘑菇】轻松跃上！
         hazards.push({
           type: 'spring',
           x: (gtx - 1) * TILE_SIZE + 2,
@@ -627,7 +614,7 @@ window.NailongAdventure = window.NailongAdventure || {};
           h: 22,
           bounceAnim: 0,
         });
-        const highY = Math.round(localGroundY - TILE_SIZE * 4.8);
+        const highY = Math.round(localGroundY - TILE_SIZE * 4.2);
         for (let k = -1; k <= 2; k++) {
           tiles.push({
             tx: gtx + k,
@@ -677,7 +664,7 @@ window.NailongAdventure = window.NailongAdventure || {};
           collected: false,
         });
       } else if (idx === 2) {
-        // 第 3 颗黄金鸡腿：关底前高空黄金云台 —— 必须借助下方【弹力蘑菇】弹射才能跳上去！
+        // 第 3 颗黄金鸡腿：关底前高空黄金云台 —— 借助下方【弹力蘑菇】弹射即可跳上去！
         hazards.push({
           type: 'spring',
           x: (gtx - 1) * TILE_SIZE + 2,
@@ -686,7 +673,7 @@ window.NailongAdventure = window.NailongAdventure || {};
           h: 22,
           bounceAnim: 0,
         });
-        const highStepY = Math.round(localGroundY - TILE_SIZE * 4.6);
+        const highStepY = Math.round(localGroundY - TILE_SIZE * 4.0);
         tiles.push({
           tx: gtx,
           x: gx - 12,
@@ -737,18 +724,29 @@ window.NailongAdventure = window.NailongAdventure || {};
       }
     });
 
-    // 3. 关底守卫与 Boss 配置（普通关终点前也有精英暴暴龙或紫兵小队主动发射能量弹守卫！）
+    // 3. 关底守卫与 Boss 配置（降低整体压迫感，Boss 战提供狂暴龙晶+回血双补给砖块！）
     if (spec.isBoss) {
       const arenaLeft = (bossArenaStart + 2) * TILE_SIZE;
       const arenaRight = (lengthTiles - 6) * TILE_SIZE;
       tiles.push({
         tx: bossArenaStart + 1,
         x: (bossArenaStart + 1) * TILE_SIZE,
-        y: Math.round(groundY - TILE_SIZE * 2.5),
+        y: Math.round(groundY - TILE_SIZE * 2.4),
         w: TILE_SIZE,
         h: TILE_SIZE,
         type: 'question',
-        item: 'chili',
+        item: 'atk_gem',
+        bumped: false,
+        bumpOffset: 0,
+      });
+      tiles.push({
+        tx: bossArenaStart + 3,
+        x: (bossArenaStart + 3) * TILE_SIZE,
+        y: Math.round(groundY - TILE_SIZE * 2.4),
+        w: TILE_SIZE,
+        h: TILE_SIZE,
+        type: 'question',
+        item: 'heart',
         bumped: false,
         bumpOffset: 0,
       });
@@ -772,28 +770,28 @@ window.NailongAdventure = window.NailongAdventure || {};
       enemies.push({
         type: spec.isFinalBoss ? 'final_boss' : 'boss',
         name: spec.isFinalBoss ? '毁灭机甲·狂暴暴暴龙' : '暴暴龙队长',
-        x: Math.round((arenaLeft + arenaRight) * 0.55),
+        x: Math.round((arenaLeft + arenaRight) * 0.58),
         y: groundY - (spec.isFinalBoss ? 86 : 64),
         groundTopY: groundY,
         w: spec.isFinalBoss ? 72 : 54,
         h: spec.isFinalBoss ? 86 : 64,
-        vx: -95,
+        vx: -74,
         vy: 0,
-        hp: spec.bossHp || 3,
-        maxHp: spec.bossHp || 3,
+        hp: spec.bossHp || 2,
+        maxHp: spec.bossHp || 2,
         patrolMin: arenaLeft + 48,
         patrolMax: arenaRight - 48,
-        shootCooldown: 1.8,
-        chargeCooldown: 3.8,
+        shootCooldown: 2.6,
+        chargeCooldown: 4.8,
         charging: false,
         hurtTimer: 0,
         attackTimer: 0,
         isRage: false,
       });
-    } else {
-      // 每一关关底前均设有暴暴龙先锋守卫（第7~8章关底升级为双暴暴龙先锋夹击！）
+    } else if (levelId >= 4) {
+      // 第 4 关起关底设有单个暴暴龙先锋守卫（前 3 关新手保护无守卫，血量控制在 1~3 点）
       const guardTx = lengthTiles - 14;
-      const guardHp = levelId === 1 ? 2 : 2 + Math.floor(spec.chapter * 0.65);
+      const guardHp = levelId <= 10 ? 1 : levelId <= 28 ? 2 : 3;
       enemies.push({
         type: 'boss',
         name: '暴暴龙先锋',
@@ -802,44 +800,19 @@ window.NailongAdventure = window.NailongAdventure || {};
         groundTopY: groundY,
         w: 50,
         h: 60,
-        vx: -(82 + spec.chapter * 5),
+        vx: -68,
         vy: 0,
         hp: guardHp,
         maxHp: guardHp,
         patrolMin: (guardTx - 6) * TILE_SIZE,
         patrolMax: (guardTx + 4) * TILE_SIZE,
-        shootCooldown: Math.max(1.2, 2.2 - spec.chapter * 0.1),
-        chargeCooldown: Math.max(2.6, 4.2 - spec.chapter * 0.15),
+        shootCooldown: 2.8,
+        chargeCooldown: 5.0,
         charging: false,
         hurtTimer: 0,
         attackTimer: 0,
-        isRage: spec.chapter >= 7,
+        isRage: false,
       });
-
-      if (spec.chapter >= 7) {
-        const subGuardTx = lengthTiles - 22;
-        enemies.push({
-          type: 'boss',
-          name: '暴暴龙暗影副官',
-          x: subGuardTx * TILE_SIZE,
-          y: groundY - 60,
-          groundTopY: groundY,
-          w: 50,
-          h: 60,
-          vx: 88 + spec.chapter * 5,
-          vy: 0,
-          hp: Math.max(3, guardHp - 1),
-          maxHp: Math.max(3, guardHp - 1),
-          patrolMin: (subGuardTx - 5) * TILE_SIZE,
-          patrolMax: (subGuardTx + 5) * TILE_SIZE,
-          shootCooldown: 1.65,
-          chargeCooldown: 3.4,
-          charging: false,
-          hurtTimer: 0,
-          attackTimer: 0,
-          isRage: false,
-        });
-      }
     }
 
     // 4. 关底终点旗杆与小七伙伴迎接区
