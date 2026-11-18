@@ -355,10 +355,6 @@ window.NailongAdventure = window.NailongAdventure || {};
         this._showOverlay('modal-menu');
       });
 
-      document.getElementById('btn-next-level')?.addEventListener('click', () => {
-        const nextId = this.currentLevelId < 30 ? this.currentLevelId + 1 : 1;
-        this.startLevel(nextId);
-      });
       document.getElementById('btn-retry-level')?.addEventListener('click', () => {
         this.startLevel(this.currentLevelId);
       });
@@ -504,6 +500,10 @@ window.NailongAdventure = window.NailongAdventure || {};
       document.getElementById('result-time').textContent = ns.formatTimeMMSS(this.levelTimeSec);
 
       const nextBtn = document.getElementById('btn-next-level');
+      const retryBtn = document.getElementById('btn-retry-level');
+      if (retryBtn) {
+        retryBtn.classList.remove('hidden');
+      }
       if (nextBtn) {
         if (this.level.id >= 30) {
           nextBtn.textContent = '查看排行榜';
@@ -533,18 +533,24 @@ window.NailongAdventure = window.NailongAdventure || {};
       this.state = 'result';
       if (ns.Audio) ns.Audio.playGameOver();
 
+      const failedLevelId = this.level ? this.level.id : this.currentLevelId;
+
       document.getElementById('result-title').textContent = '闯关失败';
       document.getElementById('result-stars').textContent = '';
-      document.getElementById('result-subtitle').textContent = '生命值耗尽，可顶开问号砖获取波波奶茶护盾与红辣椒火球';
+      document.getElementById('result-subtitle').textContent = '生命值耗尽，可顶开问号砖获取波波奶茶护盾、蜜桃回血果与红辣椒火球';
       document.getElementById('result-score').textContent = String(this.levelScore);
       document.getElementById('result-drumsticks').textContent = String(this.levelDrumsticks);
       document.getElementById('result-golden').textContent = `${this.levelGolden.filter(Boolean).length} / 3`;
       document.getElementById('result-time').textContent = ns.formatTimeMMSS(this.levelTimeSec);
 
       const nextBtn = document.getElementById('btn-next-level');
+      const retryBtn = document.getElementById('btn-retry-level');
+      if (retryBtn) {
+        retryBtn.classList.add('hidden');
+      }
       if (nextBtn) {
-        nextBtn.textContent = '重新挑战本关';
-        nextBtn.onclick = () => this.startLevel(this.currentLevelId);
+        nextBtn.textContent = `重新挑战本关（第 ${failedLevelId} 关）`;
+        nextBtn.onclick = () => this.loadLevel(failedLevelId, true);
       }
 
       this._showOverlay('modal-result');
